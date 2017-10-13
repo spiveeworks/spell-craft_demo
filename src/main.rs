@@ -129,7 +129,7 @@ impl Game {
 
 fn settings() -> WindowSettings {
     WindowSettings::new(
-        "piston-tutorial",
+        "charm-game",
         [600, 600]
     )
 }
