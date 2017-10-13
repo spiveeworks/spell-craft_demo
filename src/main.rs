@@ -2,7 +2,9 @@ extern crate piston_window;
 
 use piston_window::*;
 
-mod game;
+extern crate charm_internal;
+
+use charm_internal as game;
 
 const SPEED: i32 = 1;
 
