@@ -4,3 +4,5 @@ version = "0.0.0"
 authors = ["SpiveeWorks <spiveehere@gmail.com>"]
 
 [dependencies]
+piston_window = "0.72.0"
+
