@@ -1,6 +1,8 @@
 [package]
 name = "charm_game"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["SpiveeWorks <spiveehere@gmail.com>"]
 
 [dependencies]
+piston_window = "0.72.0"
+
