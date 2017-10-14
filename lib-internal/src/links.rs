@@ -46,6 +46,12 @@ impl From<cell::BorrowMutError> for BorrowMutError {
     }
 }
 
+impl<T> Clone for Link<T> {
+    fn clone(&self) -> Self {
+        Link(self.0.clone())
+    }
+}
+
 impl<T> Owned<T> {
     pub fn new(value: T) -> Self {
         // where's point-free when you need it
