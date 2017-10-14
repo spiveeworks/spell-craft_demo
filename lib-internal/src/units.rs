@@ -2,13 +2,19 @@ use std::ops;
 
 
 pub type Time = i64;
+pub type Scalar = i64;
 
-pub const SEC: Time = 256;
+pub const SEC: Time = 1 << 16; // 65536
+// a DOT is merely the distance traveled in a SEC with a velocity of 1
+// in this way it is a useful stepping stone
+// it represents something close to the minimum reasonable distance
+// when working with velocities
+pub const DOT: Scalar = SEC;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec2 {
-    pub x: i32,
-    pub y: i32,
+    pub x: Scalar,
+    pub y: Scalar,
 }
 
 // could use the Zero trait
@@ -32,24 +38,24 @@ impl ops::Add<Vec2> for Vec2 {
     }
 }
 
-impl ops::MulAssign<i32> for Vec2 {
-    fn mul_assign(&mut self, rhs: i32) {
+impl ops::MulAssign<Scalar> for Vec2 {
+    fn mul_assign(&mut self, rhs: Scalar) {
         self.x *= rhs;
         self.y *= rhs;
     }
 }
 
-impl ops::Mul<i32> for Vec2 {
+impl ops::Mul<Scalar> for Vec2 {
     type Output = Vec2;
-    fn mul(mut self: Vec2, t: i32) -> Vec2 {
+    fn mul(mut self: Vec2, t: Scalar) -> Vec2 {
         self *= t;
         self
     }
 }
 
-impl ops::Mul<Vec2> for i32 {
+impl ops::Mul<Vec2> for Scalar {
     type Output = Vec2;
-    fn mul(self: i32, v: Vec2) -> Vec2 {
+    fn mul(self: Scalar, v: Vec2) -> Vec2 {
         v * self
     }
 }
@@ -85,7 +91,7 @@ impl Body {
 
     pub fn position(&self, now: Time) -> Position {
         let dtime = now - self.last_time;
-        let displacement = self.current_velocity * dtime as i32;
+        let displacement = self.current_velocity * dtime;
         self.last_position + displacement
     }
 

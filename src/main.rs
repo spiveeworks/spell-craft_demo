@@ -6,7 +6,7 @@ extern crate charm_internal;
 
 use charm_internal as game;
 
-const SPEED: i32 = 1;
+const SPEED: game::Scalar = 20;
 
 struct Player {
     body: game::Body,
@@ -16,8 +16,8 @@ struct Player {
 impl Player {
     fn rectangle(&self, now: game::Time) -> [f64; 4] {
         let game::Vec2{x, y} = self.body.position(now);
-        let x = x as f64;
-        let y = y as f64;
+        let x = x as f64 / game::DOT as f64;
+        let y = y as f64 / game::DOT as f64;
         [x - self.radius, y - self.radius,
             2.0 * self.radius, 2.0 * self.radius]
     }
@@ -65,7 +65,11 @@ impl Game {
     }
 
     fn on_update(&mut self, upd: UpdateArgs) {
+        let last_time = self.time;
         self.time += (game::SEC as f64 * upd.dt) as game::Time;
+        if last_time / game::SEC < self.time / game::SEC {
+            println!("Time: {}", self.time / game::SEC);
+        }
     }
 
     fn update_movement(&mut self) {
@@ -77,10 +81,10 @@ impl Game {
         if self.dirs.down  { y += SPEED }
 
         if x != 0 && y != 0 {
-            x *= 7;
-            x /= 5;
-            y *= 7;
-            y /= 5;
+            x *= 5;
+            x /= 7;
+            y *= 5;
+            y /= 7;
         }
 
         self.player.body.update(game::Vec2 { x, y }, self.time);
@@ -102,6 +106,8 @@ impl Game {
             return;  // don't update player velocity
         }
 
+        // we don't actually need to update on the repeat presses
+        // but there's no point filtering those out
         self.update_movement();
     }
 
