@@ -2,11 +2,14 @@ extern crate piston_window;
 
 use piston_window::*;
 
+use std::time;
+
 extern crate charm_internal;
 
 use charm_internal as game;
 
 const SPEED: game::Scalar = 20;
+const MAX_SKIP: game::Time = game::SEC / 16;
 
 struct Player {
     body: game::Body,
@@ -31,8 +34,57 @@ struct DirPad<T> {
     right: T,
 }
 
+fn duration_in_game(duration: time::Duration) -> game::Time {
+    let seconds = duration.as_secs();
+    let nanos = duration.subsec_nanos();
+    let time_s = seconds as game::Time * game::SEC;
+    // a billion times the actual time represented by the nanos
+    let time_n_bi =   nanos as game::Time * game::SEC;
+    time_s + time_n_bi / 1_000_000_000
+}
+
+struct Clock {
+    start_instant: Option<time::Instant>,
+    last_time: game::Time,
+}
+
+impl Clock {
+    fn new() -> Clock {
+        Clock {
+            start_instant: None,
+            last_time: 0,
+        }
+    }
+
+    fn elapsed_as_of(&self, now: time::Instant) -> time::Duration {
+        if let Some(start) = self.start_instant {
+            now.duration_since(start)
+        } else {
+            // time only passes if the clock has started
+            time::Duration::new(0,0)
+        }
+    }
+
+    fn time(&self, now: time::Instant) -> game::Time {
+        let elapsed = self.elapsed_as_of(now);
+        self.last_time + duration_in_game(elapsed)
+    }
+
+    fn stop(&mut self, now: time::Instant) {
+        self.last_time = self.time(now);
+        self.start_instant = None;
+    }
+
+    fn start(&mut self, now: time::Instant) {
+        self.stop(now);
+        self.start_instant = Some(now);
+    }
+}
+
 struct Game {
-    time: game::Time,
+    clock: Clock,
+    current_time: game::Time,
+    last_render: game::Time,
     player: Player,
     controls: DirPad<Button>,
     dirs: DirPad<bool>,
@@ -40,13 +92,17 @@ struct Game {
 
 impl Game {
     fn new(player_loc: game::Position) -> Game {
-        let time = 0;
+        let mut clock = Clock::new();
+        clock.start(time::Instant::now());
+
+        let initial_time = clock.last_time;
 
         let body = game::Body::new(
             player_loc,      // initial location
             game::ZERO_VEC,  // stationary
-            time             // any time works since stationary
+            initial_time,    // any time works since stationary
         );
+
         let player = Player {
             body,
             radius: 10.0,
@@ -61,14 +117,28 @@ impl Game {
 
         let dirs = Default::default();
 
-        Game { time, player, controls, dirs }
+        Game {
+            clock,
+            current_time: initial_time,
+            last_render: initial_time,
+            player,
+            controls,
+            dirs,
+        }
     }
 
-    fn on_update(&mut self, upd: UpdateArgs) {
-        let last_time = self.time;
-        self.time += (game::SEC as f64 * upd.dt) as game::Time;
-        if last_time / game::SEC < self.time / game::SEC {
-            println!("Time: {}", self.time / game::SEC);
+    fn on_update(&mut self, _upd: UpdateArgs) {
+        let now = time::Instant::now();
+        self.current_time = self.clock.time(now);
+
+        // maximum in-game time before rendering again
+        let max_time = self.last_render + MAX_SKIP;
+        if self.current_time > max_time {
+            self.current_time = max_time;
+            self.clock = Clock {
+                start_instant: Some(now),
+                last_time: max_time,
+            }
         }
     }
 
@@ -87,7 +157,7 @@ impl Game {
             y /= 7;
         }
 
-        self.player.body.update(game::Vec2 { x, y }, self.time);
+        self.player.body.update(game::Vec2 { x, y }, self.current_time);
     }
 
     fn on_input(&mut self, bin: ButtonArgs) {
@@ -117,6 +187,7 @@ impl Game {
         graphics: &mut G2d,
         ren: RenderArgs
     ) {
+        self.last_render = self.current_time;
         clear([0.0, 0.0, 0.0, 1.0], graphics);
 
         let center = context.transform
@@ -127,7 +198,7 @@ impl Game {
         let red = [1.0, 0.0, 0.0, 1.0];
         ellipse(
             red,
-            self.player.rectangle(self.time),
+            self.player.rectangle(self.current_time),
             center,
             graphics
         );
@@ -144,6 +215,8 @@ fn settings() -> WindowSettings {
 
 fn main() {
     let mut game_state = Game::new(game::ZERO_VEC);
+    game_state.clock.start(time::Instant::now());
+
     let mut window: PistonWindow =
         settings().exit_on_esc(true)
                   .build()
