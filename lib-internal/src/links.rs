@@ -55,6 +55,17 @@ impl<T> Owned<T> {
     pub fn share(ptr: &Self) -> Link<T> {
         Link(rc::Rc::downgrade(&ptr.0))
     }
+
+    pub fn ptr_eq(ptr: &Self, other: &Ref<T>) -> bool {
+        unsafe {
+            // use the Rc implementation of ptr_eq
+            let other = rc::Rc::from_raw(other.strong);
+            let result = rc::Rc::ptr_eq(&ptr.0, &other);
+            // don't drop the Rc, that's the Ref's job
+            mem::forget(other);
+            result
+        }
+    }
 }
 
 impl<T> Link<T> {
