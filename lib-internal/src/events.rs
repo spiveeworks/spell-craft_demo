@@ -60,11 +60,11 @@ impl EventQueue {
         }
     }
 
-    pub fn get_current_time(&self) -> units::Time {
+    pub fn now(&self) -> units::Time {
         self.current_time
     }
 
-    pub fn get_next_time(&self) -> Option<units::Time> {
+    pub fn next(&self) -> Option<units::Time> {
         self.queue
             .peek()
             .map(|qe| qe.execute_time)
@@ -85,7 +85,7 @@ impl EventQueue {
     }
 
     pub fn simulate(&mut self, until: units::Time) {
-        while let Some(next_time) = self.get_next_time() {
+        while let Some(next_time) = self.next() {
             if next_time <= until {
                 self.invoke_next();
             } else {
