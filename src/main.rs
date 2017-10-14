@@ -3,6 +3,7 @@ extern crate piston_window;
 use piston_window::*;
 
 use std::time;
+use std::ops;
 
 extern crate charm_internal;
 
@@ -26,12 +27,55 @@ impl Player {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Dir {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
 #[derive(Default)]
 struct DirPad<T> {
     up: T,
     down: T,
     left: T,
     right: T,
+}
+
+impl<T> ops::Index<Dir> for DirPad<T> {
+    type Output = T;
+    fn index(&self, index: Dir) -> &T {
+        match index {
+            Dir::Up    => &self.up,
+            Dir::Down  => &self.down,
+            Dir::Left  => &self.left,
+            Dir::Right => &self.right,
+        }
+    }
+}
+
+impl<T> ops::IndexMut<Dir> for DirPad<T> {
+    fn index_mut(&mut self, index: Dir) -> &mut T {
+        match index {
+            Dir::Up    => &mut self.up,
+            Dir::Down  => &mut self.down,
+            Dir::Left  => &mut self.left,
+            Dir::Right => &mut self.right,
+        }
+    }
+}
+
+impl<T> DirPad<T>
+    where T: PartialEq
+{
+    fn dir(&self, item: T) -> Option<Dir> {
+        if      item == self.up    { Some( Dir::Up    ) }
+        else if item == self.down  { Some( Dir::Down  ) }
+        else if item == self.left  { Some( Dir::Left  ) }
+        else if item == self.right { Some( Dir::Right ) }
+        else { None }
+    }
 }
 
 fn duration_in_game(duration: time::Duration) -> game::Time {
@@ -142,7 +186,13 @@ impl Game {
         }
     }
 
-    fn update_movement(&mut self) {
+    fn update_movement(&mut self, dir: Dir, state: bool) {
+        if self.dirs[dir] == state {
+            // short circuit to avoid unnecessary rounding
+            return;
+        }
+        self.dirs[dir] = state;
+
         let mut x = 0;
         let mut y = 0;
         if self.dirs.left  { x -= SPEED }
@@ -164,21 +214,9 @@ impl Game {
         let ButtonArgs { button, state, .. } = bin;
         let state = state == ButtonState::Press;  // true if pressed
 
-        if        button == self.controls.up {
-            self.dirs.up = state;
-        } else if button == self.controls.down {
-            self.dirs.down = state;
-        } else if button == self.controls.left {
-            self.dirs.left = state;
-        } else if button == self.controls.right {
-            self.dirs.right = state;
-        } else {
-            return;  // don't update player velocity
+        if let Some(dir) = self.controls.dir(button) {
+            self.update_movement(dir, state);
         }
-
-        // we don't actually need to update on the repeat presses
-        // but there's no point filtering those out
-        self.update_movement();
     }
 
     fn on_draw(
