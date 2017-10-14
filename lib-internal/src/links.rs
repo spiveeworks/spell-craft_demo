@@ -8,11 +8,11 @@ pub struct Link<T> (rc::Weak<cell::RefCell<T>>);
 
 // These types are a mess...
 // raw pointer to keep the reference count alive
-// while an unbounded Ref exists
+//   while an unbounded Ref exists.
 // but since we need to manually drop them in order,
-// Option the Ref so that we can do the Option dance during Drop
+//   Option the Ref so that we can do the Option dance during Drop.
 // so basically never use the strong pointer,
-// and never empty the Option
+//   and never empty the Option.
 pub struct Ref<'a, T: 'a> {
     strong: *const cell::RefCell<T>,
     borrow: Option<cell::Ref<'a, T>>,
@@ -52,8 +52,8 @@ impl<T> Owned<T> {
         Owned(rc::Rc::new(cell::RefCell::new(value)))
     }
 
-    pub fn share(&self) -> Link<T> {
-        Link(rc::Rc::downgrade(&self.0))
+    pub fn share(ptr: &Self) -> Link<T> {
+        Link(rc::Rc::downgrade(&ptr.0))
     }
 }
 
@@ -64,8 +64,9 @@ impl<T> Link<T> {
     }
 
 
-    pub fn try_borrow(&self) -> Result<Ref<T>, BorrowError> {
-        let strong = rc::Weak::upgrade(&self.0)
+    pub fn try_borrow(self: &Self) -> Result<Ref<T>, BorrowError> {
+        let strong = self.0
+                         .upgrade()
                          .ok_or(BorrowError::Missing)?;
         // creating this structure early will undo the strong counter
         // if the try_borrow fails
@@ -80,7 +81,7 @@ impl<T> Link<T> {
         Ok(result)
     }
 
-    pub fn try_borrow_mut(&self) -> Result<RefMut<T>, BorrowMutError> {
+    pub fn try_borrow_mut(self: &Self) -> Result<RefMut<T>, BorrowMutError> {
         let strong = self.0
                          .upgrade()
                          .ok_or(BorrowMutError::Missing)?;
