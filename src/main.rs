@@ -9,7 +9,7 @@ extern crate charm_internal;
 
 use charm_internal as game;
 
-const SPEED: game::Scalar = 20;
+const SPEED: game::Scalar = 100;
 const MAX_SKIP: game::Time = game::SEC / 16;
 
 struct Player {
