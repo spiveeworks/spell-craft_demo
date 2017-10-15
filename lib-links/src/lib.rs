@@ -13,6 +13,9 @@ pub struct Link<T> (rc::Weak<cell::RefCell<T>>);
 //   Option the Ref so that we can do the Option dance during Drop.
 // so basically never use the strong pointer,
 //   and never empty the Option.
+//
+// It would be nice to use a trait to combine all of these duplicate functions
+//   but we'll see if that makes it more or less neat
 pub struct Ref<'a, T: 'a> {
     strong: *const cell::RefCell<T>,
     borrow: Option<cell::Ref<'a, T>>,
@@ -52,6 +55,8 @@ impl<T> Clone for Link<T> {
     }
 }
 
+
+
 impl<T> Owned<T> {
     pub fn new(value: T) -> Self {
         // where's point-free when you need it
@@ -72,7 +77,18 @@ impl<T> Owned<T> {
             result
         }
     }
+
+    pub fn try_borrow(ptr: &Self) -> Result<Ref<T>, cell::BorrowError> {
+        let strong = ptr.0.clone();
+        Ok(Ref::new(strong)?)
+    }
+
+    pub fn try_borrow_mut(ptr: &Self) -> Result<RefMut<T>, cell::BorrowMutError> {
+        let strong = ptr.0.clone();
+        Ok(RefMut::new(strong)?)
+    }
 }
+
 
 impl<T> Link<T> {
     // create an empty link, useful when initalizing cycles
@@ -85,8 +101,28 @@ impl<T> Link<T> {
         let strong = self.0
                          .upgrade()
                          .ok_or(BorrowError::Missing)?;
-        // creating this structure early will undo the strong counter
-        // if the try_borrow fails
+        Ok(Ref::new(strong)?)
+    }
+
+    pub fn try_borrow_mut(self: &Self) -> Result<RefMut<T>, BorrowMutError> {
+        let strong = self.0
+                         .upgrade()
+                         .ok_or(BorrowMutError::Missing)?;
+        Ok(RefMut::new(strong)?)
+    }
+}
+
+impl<'a, T: 'a> ops::Deref for Ref<'a, T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &*self.borrow
+              .as_ref()
+              .expect("Empty Ref not dropped.")
+    }
+}
+
+impl<'a, T: 'a> Ref<'a, T> {
+    fn new(strong: rc::Rc<cell::RefCell<T>>) -> Result<Self, cell::BorrowError> {
         let mut result = Ref {
             strong: rc::Rc::into_raw(strong),
             borrow: None,
@@ -97,12 +133,11 @@ impl<T> Link<T> {
         }
         Ok(result)
     }
+}
 
-    pub fn try_borrow_mut(&self) -> Result<RefMut<T>, BorrowMutError> {
-        let strong = self.0
-                         .upgrade()
-                         .ok_or(BorrowMutError::Missing)?;
-        // see above
+
+impl<'a, T: 'a> RefMut<'a, T> {
+    fn new(strong: rc::Rc<cell::RefCell<T>>) -> Result<Self, cell::BorrowMutError> {
         let mut result = RefMut {
             strong: rc::Rc::into_raw(strong),
             borrow: None,
@@ -115,14 +150,6 @@ impl<T> Link<T> {
     }
 }
 
-impl<'a, T: 'a> ops::Deref for Ref<'a, T> {
-    type Target = T;
-    fn deref(&self) -> &T {
-        &*self.borrow
-              .as_ref()
-              .expect("Empty Ref not dropped.")
-    }
-}
 
 impl<'a, T: 'a> ops::Deref for RefMut<'a, T> {
     type Target = T;
