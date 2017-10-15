@@ -1,11 +1,14 @@
 [root]
 name = "charm_internal"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
- "ref_links 0.1.0",
+ "owned_rc 0.1.0 (git+https://github.com/spiveeworks/owned_rc)",
 ]
 
 [[package]]
-name = "ref_links"
+name = "owned_rc"
 version = "0.1.0"
+source = "git+https://github.com/spiveeworks/owned_rc#845619539a361bccdb69f1c6aad8960e0afd5daf"
 
+[metadata]
+"checksum owned_rc 0.1.0 (git+https://github.com/spiveeworks/owned_rc)" = "<none>"

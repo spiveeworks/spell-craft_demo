@@ -1,6 +1,6 @@
-extern crate ref_links;
+extern crate owned_rc;
 
-use ref_links as links;
+use owned_rc as links;
 
 pub mod prelude {
     pub use links::{Owned, Link};
