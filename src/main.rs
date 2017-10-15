@@ -96,10 +96,10 @@ struct Clock {
 }
 
 impl Clock {
-    fn new() -> Clock {
+    fn new(start_time: units::Time) -> Clock {
         Clock {
             start_instant: None,
-            last_time: 0,
+            last_time: start_time,
         }
     }
 
@@ -129,8 +129,8 @@ impl Clock {
 }
 
 struct Game {
+    igt: events::EventQueue,  // in-game time
     clock: Clock,
-    current_time: units::Time,
     last_render: units::Time,
     player: Player,
     controls: DirPad<Button>,
@@ -139,16 +139,13 @@ struct Game {
 
 impl Game {
     fn new(player_loc: units::Position) -> Game {
-        let mut clock = Clock::new();
+        let igt = events::EventQueue::new();
+        let initial_time = igt.now();  // probably 0
+
+        let mut clock = Clock::new(initial_time);
         clock.start(time::Instant::now());
 
-        let initial_time = clock.last_time;
-
-        let body = physics::Body::new(
-            player_loc,       // initial location
-            units::ZERO_VEC,  // stationary
-            initial_time,     // any time works since stationary
-        );
+        let body = physics::Body::new_frozen(player_loc);
 
         let player = Player {
             body,
@@ -165,8 +162,8 @@ impl Game {
         let dirs = Default::default();
 
         Game {
+            igt,
             clock,
-            current_time: initial_time,
             last_render: initial_time,
             player,
             controls,
@@ -176,17 +173,19 @@ impl Game {
 
     fn on_update(&mut self, _upd: UpdateArgs) {
         let now = time::Instant::now();
-        self.current_time = self.clock.time(now);
+        let mut ig_now = self.clock.time(now);
 
         // maximum in-game time before rendering again
         let max_time = self.last_render + MAX_SKIP;
-        if self.current_time > max_time {
-            self.current_time = max_time;
+        if ig_now > max_time {
+            ig_now = max_time;
             self.clock = Clock {
                 start_instant: Some(now),
                 last_time: max_time,
             }
         }
+
+        self.igt.simulate(ig_now);
     }
 
     fn update_movement(&mut self, dir: Dir, state: bool) {
@@ -210,7 +209,7 @@ impl Game {
             y /= 7;
         }
 
-        self.player.body.bounce(units::Vec2 { x, y }, self.current_time);
+        self.player.body.bounce(units::Vec2 { x, y }, self.igt.now());
     }
 
     fn on_input(&mut self, bin: ButtonArgs) {
@@ -228,7 +227,7 @@ impl Game {
         graphics: &mut G2d,
         ren: RenderArgs
     ) {
-        self.last_render = self.current_time;
+        self.last_render = self.igt.now();
         clear([0.0, 0.0, 0.0, 1.0], graphics);
 
         let center = context.transform
@@ -239,7 +238,7 @@ impl Game {
         let red = [1.0, 0.0, 0.0, 1.0];
         ellipse(
             red,
-            self.player.rectangle(self.current_time),
+            self.player.rectangle(self.igt.now()),
             center,
             graphics
         );
