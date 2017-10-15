@@ -95,7 +95,7 @@ impl EventQueue {
         self.current_time = until;
     }
 
-    pub fn enqueue<E>(&mut self, event: E, delay: units::Time)
+    pub fn enqueue<E>(&mut self, event: E, delay: units::Duration)
         where E: 'static + Event
     {
         let element = QueueElement {

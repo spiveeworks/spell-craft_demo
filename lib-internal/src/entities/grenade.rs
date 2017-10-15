@@ -48,12 +48,11 @@ impl Grenade {
         };
         let nade = Owned::new(nade_value);
 
-        let end_time = time.now() + travel_time;
         time.enqueue(
             GrenadeExplodeEvent {
                 target: Owned::share(&nade)
             },
-            end_time
+            travel_time
         );
 
         if let Ok(mut loc) = space.try_borrow_mut() {
@@ -85,12 +84,11 @@ impl events::Event for GrenadeExplodeEvent {
         }
 
         // let the smoke clear
-        let clear_time = time.now() + units::MOMENT;
         time.enqueue(
             GrenadeDisappearEvent {
                 target
             },
-            clear_time
+            units::MOMENT
         );
     }
 }
