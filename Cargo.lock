@@ -4,7 +4,6 @@ version = "0.0.1"
 dependencies = [
  "charm_internal 0.0.1",
  "piston_window 0.72.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ref_links 0.1.0",
 ]
 
 [[package]]

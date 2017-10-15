@@ -58,15 +58,15 @@ impl<T> Owned<T> {
         Owned(rc::Rc::new(cell::RefCell::new(value)))
     }
 
-    pub fn share(ptr: &Self) -> Link<T> {
-        Link(rc::Rc::downgrade(&ptr.0))
+    pub fn share(&self) -> Link<T> {
+        Link(rc::Rc::downgrade(&self.0))
     }
 
-    pub fn ptr_eq(ptr: &Self, other: &Ref<T>) -> bool {
+    pub fn ptr_eq(&self, other: &Ref<T>) -> bool {
         unsafe {
             // use the Rc implementation of ptr_eq
             let other = rc::Rc::from_raw(other.strong);
-            let result = rc::Rc::ptr_eq(&ptr.0, &other);
+            let result = rc::Rc::ptr_eq(&self.0, &other);
             // don't drop the Rc, that's the Ref's job
             mem::forget(other);
             result
@@ -81,7 +81,7 @@ impl<T> Link<T> {
     }
 
 
-    pub fn try_borrow(self: &Self) -> Result<Ref<T>, BorrowError> {
+    pub fn try_borrow(&self) -> Result<Ref<T>, BorrowError> {
         let strong = self.0
                          .upgrade()
                          .ok_or(BorrowError::Missing)?;
@@ -98,7 +98,7 @@ impl<T> Link<T> {
         Ok(result)
     }
 
-    pub fn try_borrow_mut(self: &Self) -> Result<RefMut<T>, BorrowMutError> {
+    pub fn try_borrow_mut(&self) -> Result<RefMut<T>, BorrowMutError> {
         let strong = self.0
                          .upgrade()
                          .ok_or(BorrowMutError::Missing)?;

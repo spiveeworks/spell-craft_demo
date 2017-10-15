@@ -88,7 +88,7 @@ impl events::Event for GrenadeExplodeEvent {
             GrenadeDisappearEvent {
                 target
             },
-            units::MOMENT
+            3 * units::MOMENT
         );
     }
 }

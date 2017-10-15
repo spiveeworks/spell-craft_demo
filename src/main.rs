@@ -6,9 +6,7 @@ use std::time;
 use std::ops;
 
 extern crate charm_internal;
-extern crate ref_links;
 
-use ref_links as links;
 use charm_internal::{units, physics, events, entities};
 use charm_internal::prelude::*;
 
@@ -18,16 +16,6 @@ const MAX_SKIP: units::Time = units::SEC / 16;
 struct Player {
     body: physics::Body,
     radius: f64,
-}
-
-impl Player {
-    fn rectangle(&self, now: units::Time) -> [f64; 4] {
-        let units::Vec2{x, y} = self.body.position(now);
-        let x = x as f64 / units::DOT as f64;
-        let y = y as f64 / units::DOT as f64;
-        [x - self.radius, y - self.radius,
-            2.0 * self.radius, 2.0 * self.radius]
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -231,24 +219,13 @@ impl Game {
 
     fn fire(&mut self) {
         let time_now = self.igt.now();
-        let result = entities::Grenade::new(
+        let _result = entities::Grenade::new(
             &mut self.igt,
             Owned::share(&self.space),
             self.player.body.position(time_now),
             self.cursor_pos,
-            3 * units::SEC
+            1 * units::SEC
         );
-        if let Ok(nade) = result {
-            if let Ok(nade) = nade.try_borrow() {
-                let units::Vec2 { x, y } = nade.body.position(time_now) / units::DOT;
-                println!("nade made at: {}, {}", x, y);
-            }
-        }
-        let space = Owned::share(&self.space);
-        if let Ok(space) = space.try_borrow() {
-            println!("total nades: {}", space.nades.len());
-        }
-        std::mem::drop(space);
     }
 
     fn on_input(&mut self, bin: ButtonArgs) {
@@ -290,12 +267,41 @@ impl Game {
         let red = [1.0, 0.0, 0.0, 1.0];
         ellipse(
             red,
-            self.player.rectangle(self.igt.now()),
+            rectangle(&self.player.body, self.player.radius, self.igt.now()),
             center,
             graphics
         );
+        let space = self.space.share();
+        if let Ok(space) = space.try_borrow() {
+            for nade in &space.nades {
+                let nade = nade.share();
+                if let Ok(nade) = nade.try_borrow() {
+                    let (rad, col) = match nade.state {
+                        entities::GrenadeState::Cooking{..} => (7.0, [0.0, 0.2, 0.0, 1.0]),
+                        entities::GrenadeState::Smoke => (150.0, [1.0, 0.8, 0.0, 1.0]),
+                    };
+                    ellipse(
+                        col,
+                        rectangle(&nade.body, rad, self.igt.now()),
+                        center,
+                        graphics
+                    );
+                }
+                std::mem::drop(nade);
+            }
+        }
+        std::mem::drop(space);
     }
 }
+
+fn rectangle(body: &physics::Body, radius: f64, now: units::Time) -> [f64; 4] {
+    let units::Vec2{x, y} = body.position(now);
+    let x = x as f64 / units::DOT as f64;
+    let y = y as f64 / units::DOT as f64;
+    [x - radius, y - radius,
+        2.0 * radius, 2.0 * radius]
+}
+
 
 
 fn settings() -> WindowSettings {
