@@ -6,22 +6,25 @@ use std::time;
 use std::ops;
 
 extern crate charm_internal;
+extern crate ref_links;
 
-use charm_internal as game;
+use ref_links as links;
+use charm_internal::{units, physics, events, entities};
+use charm_internal::prelude::*;
 
-const SPEED: game::Scalar = 100;
-const MAX_SKIP: game::Time = game::SEC / 16;
+const SPEED: units::Scalar = 100;
+const MAX_SKIP: units::Time = units::SEC / 16;
 
 struct Player {
-    body: game::Body,
+    body: physics::Body,
     radius: f64,
 }
 
 impl Player {
-    fn rectangle(&self, now: game::Time) -> [f64; 4] {
-        let game::Vec2{x, y} = self.body.position(now);
-        let x = x as f64 / game::DOT as f64;
-        let y = y as f64 / game::DOT as f64;
+    fn rectangle(&self, now: units::Time) -> [f64; 4] {
+        let units::Vec2{x, y} = self.body.position(now);
+        let x = x as f64 / units::DOT as f64;
+        let y = y as f64 / units::DOT as f64;
         [x - self.radius, y - self.radius,
             2.0 * self.radius, 2.0 * self.radius]
     }
@@ -78,18 +81,18 @@ impl<T> DirPad<T>
     }
 }
 
-fn duration_in_game(duration: time::Duration) -> game::Time {
+fn duration_in_game(duration: time::Duration) -> units::Time {
     let seconds = duration.as_secs();
     let nanos = duration.subsec_nanos();
-    let time_s = seconds as game::Time * game::SEC;
+    let time_s = seconds as units::Time * units::SEC;
     // a billion times the actual time represented by the nanos
-    let time_n_bi =   nanos as game::Time * game::SEC;
+    let time_n_bi =   nanos as units::Time * units::SEC;
     time_s + time_n_bi / 1_000_000_000
 }
 
 struct Clock {
     start_instant: Option<time::Instant>,
-    last_time: game::Time,
+    last_time: units::Time,
 }
 
 impl Clock {
@@ -109,7 +112,7 @@ impl Clock {
         }
     }
 
-    fn time(&self, now: time::Instant) -> game::Time {
+    fn time(&self, now: time::Instant) -> units::Time {
         let elapsed = self.elapsed_as_of(now);
         self.last_time + duration_in_game(elapsed)
     }
@@ -127,24 +130,24 @@ impl Clock {
 
 struct Game {
     clock: Clock,
-    current_time: game::Time,
-    last_render: game::Time,
+    current_time: units::Time,
+    last_render: units::Time,
     player: Player,
     controls: DirPad<Button>,
     dirs: DirPad<bool>,
 }
 
 impl Game {
-    fn new(player_loc: game::Position) -> Game {
+    fn new(player_loc: units::Position) -> Game {
         let mut clock = Clock::new();
         clock.start(time::Instant::now());
 
         let initial_time = clock.last_time;
 
-        let body = game::Body::new(
-            player_loc,      // initial location
-            game::ZERO_VEC,  // stationary
-            initial_time,    // any time works since stationary
+        let body = physics::Body::new(
+            player_loc,       // initial location
+            units::ZERO_VEC,  // stationary
+            initial_time,     // any time works since stationary
         );
 
         let player = Player {
@@ -207,7 +210,7 @@ impl Game {
             y /= 7;
         }
 
-        self.player.body.update(game::Vec2 { x, y }, self.current_time);
+        self.player.body.bounce(units::Vec2 { x, y }, self.current_time);
     }
 
     fn on_input(&mut self, bin: ButtonArgs) {
@@ -252,7 +255,7 @@ fn settings() -> WindowSettings {
 }
 
 fn main() {
-    let mut game_state = Game::new(game::ZERO_VEC);
+    let mut game_state = Game::new(units::ZERO_VEC);
     game_state.clock.start(time::Instant::now());
 
     let mut window: PistonWindow =

@@ -6,4 +6,5 @@ authors = ["SpiveeWorks <spiveehere@gmail.com>"]
 [dependencies]
 piston_window = "0.72.0"
 charm_internal = { path = 'lib-internal' }
+ref_links = { path = 'lib-links' }
 
