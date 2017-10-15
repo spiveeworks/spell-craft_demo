@@ -4,4 +4,4 @@ version = "0.0.2"
 authors = ["SpiveeWorks <spiveehere@gmail.com>"]
 
 [dependencies]
-ref_links = { path = '../lib-links' }
+owned_rc = { git = 'https://github.com/spiveeworks/owned_rc' }
