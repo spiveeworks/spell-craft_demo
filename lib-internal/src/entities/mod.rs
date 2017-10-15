@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use links::{Owned, Link};
+use prelude::*;
 use links;
 
 mod grenade;

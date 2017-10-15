@@ -1,4 +1,4 @@
-use links::{Owned, Link};
+use prelude::*;
 
 use units;
 use physics;
