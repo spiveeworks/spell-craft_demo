@@ -6,7 +6,7 @@ use events;
 
 use super::*;
 
-enum GrenadeState {
+pub enum GrenadeState {
     Cooking {
         target_location: units::Position,
     },
@@ -15,8 +15,8 @@ enum GrenadeState {
 
 pub struct Grenade {
     space: Link<Space>,
-    body: physics::Body,
-    state: GrenadeState,
+    pub body: physics::Body,
+    pub state: GrenadeState,
 }
 
 struct GrenadeExplodeEvent {
@@ -102,6 +102,7 @@ impl events::Event for GrenadeDisappearEvent {
             if let Ok(mut space) = nade.space.try_borrow_mut() {
                 space.remove_entity(&nade);
             }
+            // TODO unlink from grenade as well
         }
     }
 }

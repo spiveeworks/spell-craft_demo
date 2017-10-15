@@ -132,9 +132,14 @@ struct Game {
     igt: events::EventQueue,  // in-game time
     clock: Clock,
     last_render: units::Time,
+
     player: Player,
-    controls: DirPad<Button>,
+    space: Owned<entities::Space>,
+
+    move_controls: DirPad<Button>,
+    fire_button: Button,
     dirs: DirPad<bool>,
+    cursor_pos: units::Position,
 }
 
 impl Game {
@@ -145,6 +150,7 @@ impl Game {
         let mut clock = Clock::new(initial_time);
         clock.start(time::Instant::now());
 
+
         let body = physics::Body::new_frozen(player_loc);
 
         let player = Player {
@@ -152,22 +158,33 @@ impl Game {
             radius: 10.0,
         };
 
-        let controls = DirPad {
+        let space = entities::Space::new();
+        let space = Owned::new(space);
+
+
+        let move_controls = DirPad {
             up:    Button::Keyboard(Key::W),
             down:  Button::Keyboard(Key::S),
             left:  Button::Keyboard(Key::A),
             right: Button::Keyboard(Key::D),
         };
+        let fire_button = Button::Mouse(MouseButton::Left);
 
         let dirs = Default::default();
+        let cursor_pos = units::ZERO_VEC;
 
         Game {
             igt,
             clock,
             last_render: initial_time,
+
             player,
-            controls,
+            space,
+
+            move_controls,
+            fire_button,
             dirs,
+            cursor_pos,
         }
     }
 
@@ -212,13 +229,48 @@ impl Game {
         self.player.body.bounce(units::Vec2 { x, y }, self.igt.now());
     }
 
+    fn fire(&mut self) {
+        let time_now = self.igt.now();
+        let result = entities::Grenade::new(
+            &mut self.igt,
+            Owned::share(&self.space),
+            self.player.body.position(time_now),
+            self.cursor_pos,
+            3 * units::SEC
+        );
+        if let Ok(nade) = result {
+            if let Ok(nade) = nade.try_borrow() {
+                let units::Vec2 { x, y } = nade.body.position(time_now) / units::DOT;
+                println!("nade made at: {}, {}", x, y);
+            }
+        }
+        let space = Owned::share(&self.space);
+        if let Ok(space) = space.try_borrow() {
+            println!("total nades: {}", space.nades.len());
+        }
+        std::mem::drop(space);
+    }
+
     fn on_input(&mut self, bin: ButtonArgs) {
         let ButtonArgs { button, state, .. } = bin;
         let state = state == ButtonState::Press;  // true if pressed
 
-        if let Some(dir) = self.controls.dir(button) {
+        if let Some(dir) = self.move_controls.dir(button) {
             self.update_movement(dir, state);
         }
+
+        if state && button == self.fire_button {
+            self.fire();
+        }
+    }
+
+    fn on_mouse_move(&mut self, mouse: [f64; 2]) {
+        let x = (mouse[0] - 300.0) * units::DOT as f64;
+        let y = (mouse[1] - 300.0) * units::DOT as f64;
+        self.cursor_pos = units::Vec2 {
+            x: x as units::Scalar,
+            y: y as units::Scalar,
+        };
     }
 
     fn on_draw(
@@ -272,6 +324,9 @@ fn main() {
         }
         if let Some(bin) = e.button_args() {
             game_state.on_input(bin);
+        }
+        if let Some(mouse) = e.mouse_cursor_args() {
+            game_state.on_mouse_move(mouse);
         }
     }
 }

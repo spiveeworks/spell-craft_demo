@@ -20,7 +20,8 @@ pub trait Container<Obj> {
 }
 
 pub struct Space {
-    nades: VecDeque<Owned<Grenade>>,
+    // TODO make a proper interface for this
+    pub nades: VecDeque<Owned<Grenade>>,
 }
 
 impl Container<Grenade> for Space {
@@ -38,6 +39,14 @@ impl Container<Grenade> for Space {
         }
 
         result.and_then(|i| self.nades.remove(i))
+    }
+}
+
+impl Space {
+    pub fn new() -> Self {
+        Space {
+            nades: VecDeque::new(),
+        }
     }
 }
 
