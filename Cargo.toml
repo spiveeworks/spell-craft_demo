@@ -1,6 +1,6 @@
 [package]
 name = "charm_game"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["SpiveeWorks <spiveehere@gmail.com>"]
 
 [dependencies]
