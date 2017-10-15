@@ -4,3 +4,4 @@ version = "0.0.1"
 authors = ["SpiveeWorks <spiveehere@gmail.com>"]
 
 [dependencies]
+ref_links = { path = '../lib-links' }
