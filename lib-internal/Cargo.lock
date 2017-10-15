@@ -1,4 +1,11 @@
 [root]
 name = "charm_internal"
 version = "0.0.1"
+dependencies = [
+ "ref_links 0.1.0",
+]
+
+[[package]]
+name = "ref_links"
+version = "0.1.0"
 
