@@ -221,7 +221,7 @@ impl Game {
         let time_now = self.igt.now();
         let _result = entities::Grenade::new(
             &mut self.igt,
-            Owned::share(&self.space),
+            &self.space.share(),
             self.player.body.position(time_now),
             self.cursor_pos,
             1 * units::SEC

@@ -7,13 +7,14 @@ mod grenade;
 
 pub use self::grenade::*;
 
+// TODO better names for things? space is a subset of container?
 pub trait Container<Obj> {
     fn add_entity(&mut self, Owned<Obj>);
-    fn remove_entity(&mut self, &links::Ref<Obj>) -> Option<Owned<Obj>>;
+    fn remove_entity(&mut self, links::PtrCompare<Grenade>) -> Option<Owned<Obj>>;
 
     fn add_value(&mut self, toad: Obj) -> Link<Obj> {
         let toad = Owned::new(toad);
-        let result = Owned::share(&toad);
+        let result = toad.share();
         self.add_entity(toad);
         result
     }
@@ -28,11 +29,11 @@ impl Container<Grenade> for Space {
     fn add_entity(&mut self, toad: Owned<Grenade>) {
         self.nades.push_back(toad);
     }
-    fn remove_entity(&mut self, tore: &links::Ref<Grenade>) -> Option<Owned<Grenade>> {
+    fn remove_entity(&mut self, tore: links::PtrCompare<Grenade>) -> Option<Owned<Grenade>> {
         let mut result = None;
 
         for (i, item) in self.nades.iter().enumerate() {
-            if Owned::ptr_eq(item, tore) {
+            if item.compare() == tore {
                 result = Some(i);
                 break;
             }
