@@ -50,13 +50,13 @@ impl Grenade {
 
         time.enqueue(
             GrenadeExplodeEvent {
-                target: Owned::share(&nade)
+                target: nade.share()
             },
             travel_time
         );
 
         if let Ok(mut loc) = space.try_borrow_mut() {
-            let result = Owned::share(&nade);
+            let result = nade.share();
             loc.add_entity(nade);
             Ok(result)
         } else {
@@ -98,7 +98,7 @@ impl events::Event for GrenadeDisappearEvent {
         let target = &self.target;
         if let Ok(nade) = target.try_borrow() {
             if let Ok(mut space) = nade.space.try_borrow_mut() {
-                space.remove_entity(&nade);
+                space.remove_entity(links::Ref::compare_source(&nade));
             }
             // TODO unlink from grenade as well
         }

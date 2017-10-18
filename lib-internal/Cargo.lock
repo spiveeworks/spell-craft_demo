@@ -2,13 +2,13 @@
 name = "charm_internal"
 version = "0.0.2"
 dependencies = [
- "owned_rc 0.1.0 (git+https://github.com/spiveeworks/owned_rc)",
+ "owned_rc 0.2.0 (git+https://github.com/spiveeworks/owned_rc)",
 ]
 
 [[package]]
 name = "owned_rc"
-version = "0.1.0"
-source = "git+https://github.com/spiveeworks/owned_rc#845619539a361bccdb69f1c6aad8960e0afd5daf"
+version = "0.2.0"
+source = "git+https://github.com/spiveeworks/owned_rc#feeee2dbe119911fd3acda694c4a2df50bc09609"
 
 [metadata]
-"checksum owned_rc 0.1.0 (git+https://github.com/spiveeworks/owned_rc)" = "<none>"
+"checksum owned_rc 0.2.0 (git+https://github.com/spiveeworks/owned_rc)" = "<none>"
