@@ -109,3 +109,40 @@ impl events::Event for BoltLandEvent {
     }
 }
 
+pub struct BoltCast {
+    shape: Circle,
+    duration: units::Duration,
+    action: rc::Rc<Cast>,
+}
+
+impl Cast for BoltCast {
+    fn cast(
+        self: &Self,
+        time: &mut events::EventQueue,
+        space: Link<Space>,
+        ref_frame: physics::Body,
+        target: units::Position,
+    ) {
+        let mut space_borrow = space.try_borrow_mut();
+        let body = physics::Body::with_end_point(
+            ref_frame.position(time.now()),
+            target,
+            time.now(),
+            self.duration,
+        );
+        let loc = Entity { space, body };
+        let shape = self.shape.clone();
+        let action = rc::Rc::clone(self.action);
+        let bolt = Bolt { loc, shape, action };
+        let bolt = Owned::new(bolt);
+
+        time.enqueue(
+            BoltLandEvent { target: bolt.share() },
+            self.duration,
+        );
+
+        if let Ok(mut space) = space_borrow_mut {
+            space.add_entity(smoke.share());
+        }
+    }
+}
