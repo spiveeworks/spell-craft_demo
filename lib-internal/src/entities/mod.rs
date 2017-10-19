@@ -4,6 +4,7 @@ use prelude::*;
 use links;
 
 mod grenade;
+pub mod effects;
 
 pub use self::grenade::*;
 
