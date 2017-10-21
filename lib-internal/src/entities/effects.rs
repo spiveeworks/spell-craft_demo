@@ -1,85 +1,142 @@
-pub struct Entity {
-    space: Link<Space>,
-    body: physics::Body,
+use prelude::*;
+
+use std::rc;
+
+use events;
+use units;
+use physics;
+use links;
+use entities::spaces;
+
+
+pub trait Cast {
+    fn cast(
+        self: &Self,
+        time: &mut events::EventQueue,
+        space: Link<spaces::Space>,
+        ref_frame: physics::Body,
+        target: units::Position,
+    );
 }
 
-pub fn remove_entity(
-    entity_borrow: &mut links::RefMut<Entity, T>
-) -> Option<Owned<T>> {
-    let as_owned = entity_borrow
-        .space
-        .try_borrow_mut()
-        .map(|space| {
-            let compare = links::RefMut::compare_source(entity_borrow);
-            space.remove_entity(compare)
-        });
-    if as_owned.is_some() {
-        entity_borrow.space = Link::new();
+pub trait Effect {
+    fn color(self: &Self) -> [u8; 4];
+}
+
+
+
+
+// maybe store coords in the space itself?
+pub struct Location {
+    pub space: Link<spaces::Space>,
+    pub body: physics::Body,
+}
+
+// TODO use Link<spaces::Container<T>> instead
+impl Location {
+    fn remove<T>(
+        loc_mut: &mut links::RefMut<Location, T>  // does this really need to be borrowed?
+    ) -> Option<Owned<T>>
+        where spaces::Space: spaces::Container<T>
+    {
+        use entities::spaces::Container;
+
+        let as_owned = loc_mut
+            .space
+            .try_borrow_mut()
+            .ok()
+            .and_then(|mut space| {
+                let compare = links::RefMut::compare_source(loc_mut);
+                space.remove_entity(compare)
+            });
+        if as_owned.is_some() {
+            loc_mut.space = Link::new();
+        }
+        as_owned
     }
-    as_owned
+
+    // construct an object out of an Location object, and link it to the space in the Location
+    fn create_entity<T, F>(
+        space: Link<spaces::Space>,
+        body: physics::Body,
+        f: F,
+    ) -> Result<Link<T>, Owned<T>>
+        where F: FnOnce(Location) -> T,
+              spaces::Space: spaces::Container<T>,
+    {
+        use entities::spaces::Container;
+
+        let space2 = space.clone();
+        let loc = Location { space, body };
+        let obj = f(loc);
+        {
+            let space_borrow = space2.try_borrow_mut();
+            if let Ok(mut space) = space_borrow {
+                Ok(space.add_value(obj))
+            } else {
+                Err(Owned::new(obj))
+            }
+        }
+    }
 }
 
 
 #[derive(Clone)]
 pub struct Circle {
-    color: rc::Rc<Effect>,
-    radius: units::Scalar,
+    pub color: rc::Rc<Effect>,
+    pub radius: units::Scalar,
 }
 
 pub struct Smoke {
-    loc: Entity,
-    shape: rc::Rc<Circle>,
+    pub loc: Location,
+    pub shape: Circle,
 }
 
 pub struct SmokeClearEvent {
     target: Link<Smoke>
 }
 
-impl Event for SmokeClearEvent {
+impl events::Event for SmokeClearEvent {
     fn invoke(self: Box<Self>, _time: &mut events::EventQueue) {
         let target = &self.target;
         if let Ok(smoke) = target.try_borrow_mut() {
-            let loc = links::RefMut::map(|smoke_data| &mut smoke_data.loc);
-            remove_entity(loc);
+            let mut loc = links::RefMut::map(smoke, |smoke_data| &mut smoke_data.loc);
+            Location::remove(&mut loc);
         }
     }
 }
 
 pub struct SmokeCast {
-    shape: Circle,
-    duration: units::Duration,
+    pub shape: Circle,
+    pub duration: units::Duration,
 }
 
 impl Cast for SmokeCast {
     fn cast(
         self: &Self,
         time: &mut events::EventQueue,
-        space: Link<Space>,
+        space: Link<spaces::Space>,
         ref_frame: physics::Body,
-        target: units::Position,
+        _target: units::Position,
     ) {
-        let mut space_borrow = space.try_borrow_mut();
-        let body = ref_frame.frozen(time.now());
-        let loc = Entity { space, body };
+        let body = physics::Body::new_frozen(ref_frame.position(time.now()));
         let shape = self.shape.clone();
-        let smoke = Smoke { loc, shape };
-        let smoke = Owned::new(smoke);
+        let smoke_fn = move |loc| Smoke { loc, shape };
+        let smoke = Location::create_entity(space, body, smoke_fn);
 
-        time.enqueue(
-            SmokeClearEvent { target: smoke.share() },
-            self.duration,
-        );
-
-        if let Ok(mut space) = space_borrow_mut {
-            space.add_entity(smoke.share());
+        if let Ok(target) = smoke {
+            time.enqueue(
+                SmokeClearEvent { target },
+                self.duration,
+            );
         }
     }
 }
 
 
 pub struct Bolt {
-    loc: Entity,
-    shape: Circle,
+    pub loc: Location,
+    pub shape: Circle,
     action: rc::Rc<Cast>,
 }
 
@@ -93,16 +150,16 @@ impl events::Event for BoltLandEvent {
         if let Ok(bolt) = self.target.try_borrow_mut() {
             {
                 // remove it from space
-                let loc = links::RefMut::map(|bolt| &mut bolt.loc);
-                remove_entity(&mut loc);
+                let mut loc = links::RefMut::map(bolt, |bolt| &mut bolt.loc);
+                Location::remove(&mut loc);
             }
 
             // cast the next action
-            let bolt = self.target.borrow();  // since we just succeeded
-            bolt.action.cast(
+            let bolt = self.target.try_borrow().ok().unwrap();  // since we just succeeded
+            bolt.action.cast(                              // TODO use borrow() instead (nyi)
                 time,
-                bolt.loc.space,
-                bolt.loc.body,
+                bolt.loc.space.clone(),
+                bolt.loc.body.clone(),
                 units::ZERO_VEC,
             );
         }
@@ -110,39 +167,36 @@ impl events::Event for BoltLandEvent {
 }
 
 pub struct BoltCast {
-    shape: Circle,
-    duration: units::Duration,
-    action: rc::Rc<Cast>,
+    pub shape: Circle,
+    pub duration: units::Duration,
+    pub action: rc::Rc<Cast>,
 }
+
 
 impl Cast for BoltCast {
     fn cast(
         self: &Self,
         time: &mut events::EventQueue,
-        space: Link<Space>,
+        space: Link<spaces::Space>,
         ref_frame: physics::Body,
         target: units::Position,
     ) {
-        let mut space_borrow = space.try_borrow_mut();
         let body = physics::Body::with_end_point(
             ref_frame.position(time.now()),
             target,
             time.now(),
             self.duration,
         );
-        let loc = Entity { space, body };
         let shape = self.shape.clone();
-        let action = rc::Rc::clone(self.action);
-        let bolt = Bolt { loc, shape, action };
-        let bolt = Owned::new(bolt);
+        let action = rc::Rc::clone(&self.action);
+        let bolt_fn = move |loc| Bolt { loc, shape, action };
+        let bolt = Location::create_entity(space, body, bolt_fn);
 
-        time.enqueue(
-            BoltLandEvent { target: bolt.share() },
-            self.duration,
-        );
-
-        if let Ok(mut space) = space_borrow_mut {
-            space.add_entity(smoke.share());
+        if let Ok(target) = bolt {
+            time.enqueue(
+                BoltLandEvent { target },
+                self.duration,
+            );
         }
     }
 }

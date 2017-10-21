@@ -1,14 +1,13 @@
-use prelude::*;
+use std::rc;
 
 use units;
-use physics;
-use events;
 
-use super::*;
+use entities::effects;
+
 
 struct BoltEffect;
 
-impl Effect for BoltEffect {
+impl effects::Effect for BoltEffect {
     fn color(self: &Self) -> [u8; 4] {
         [0x00, 0x33, 0x00, 0xFF]
     }
@@ -16,7 +15,7 @@ impl Effect for BoltEffect {
 
 struct SmokeEffect;
 
-impl Effect for SmokeEffect {
+impl effects::Effect for SmokeEffect {
     fn color(self: &Self) -> [u8; 4] {
         [0xFF, 0xCC, 0x00, 0xFF]
     }
@@ -24,19 +23,19 @@ impl Effect for SmokeEffect {
 
 
 
-fn grenade() -> Rc<Cast> {
-    let smoke = SmokeCast {
-        shape: Circle {
+pub fn grenade() -> rc::Rc<effects::Cast> {
+    let smoke = effects::SmokeCast {
+        shape: effects::Circle {
             color: rc::Rc::new(SmokeEffect),
             radius: 150 * units::DOT,
         },
         duration: 3 * units::MOMENT,
     };
-    let bolt = BoltCast {
-        shape: Circle {
+    let bolt = effects::BoltCast {
+        shape: effects::Circle {
             color: rc::Rc::new(BoltEffect),
             radius: 7 * units::DOT,
-        }
+        },
         duration: 1 * units::SEC,
         action: rc::Rc::new(smoke),
     };
