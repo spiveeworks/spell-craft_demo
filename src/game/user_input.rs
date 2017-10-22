@@ -1,4 +1,8 @@
+use std::ops;
 
+use charm_internal::units;
+
+use piston_window as app;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -56,8 +60,8 @@ impl<T> DirPad<T>
 
 
 struct Input {
-    move_controls: DirPad<Button>,
-    fire_button: Button,
+    move_controls: DirPad<app::Button>,
+    fire_button: app::Button,
     dirs: DirPad<bool>,
     cursor_pos: units::Position,
 }
@@ -65,12 +69,12 @@ struct Input {
 impl Input {
     fn new() -> Input {
         let move_controls = DirPad {
-            up:    Button::Keyboard(Key::W),
-            down:  Button::Keyboard(Key::S),
-            left:  Button::Keyboard(Key::A),
-            right: Button::Keyboard(Key::D),
+            up:    app::Button::Keyboard(app::Key::W),
+            down:  app::Button::Keyboard(app::Key::S),
+            left:  app::Button::Keyboard(app::Key::A),
+            right: app::Button::Keyboard(app::Key::D),
         };
-        let fire_button = Button::Mouse(MouseButton::Left);
+        let fire_button = app::Button::Mouse(app::MouseButton::Left);
 
         let dirs = Default::default();
         let cursor_pos = units::ZERO_VEC;
@@ -85,7 +89,7 @@ impl Input {
 
     fn on_input(&mut self, game_state: &mut GameState, bin: ButtonArgs) {
         let ButtonArgs { button, state, .. } = bin;
-        let state = state == ButtonState::Press;  // true if pressed
+        let state = state == app::ButtonState::Press;  // true if pressed
 
         if let Some(dir) = self.move_controls.dir(button) {
             // short circuit to avoid unnecessary rounding

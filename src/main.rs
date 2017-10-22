@@ -9,6 +9,8 @@ extern crate charm_internal;
 use charm_internal::{units, physics, events, entities};
 use charm_internal::prelude::*;
 
+mod game;
+
 
 
 
@@ -21,8 +23,8 @@ fn settings() -> WindowSettings {
 }
 
 fn main() {
-    let mut game_state = Game::new(units::ZERO_VEC);
-    game_state.clock.start(time::Instant::now());
+    let mut game_data = game::Game::new();
+
 
     let mut window: PistonWindow =
         settings().build()
@@ -31,16 +33,16 @@ fn main() {
                   });
     while let Some(e) = window.next() {
         if let Some(ren) = e.render_args() {
-            window.draw_2d(&e, |c, g| game_state.on_draw(c, g, ren));
+            window.draw_2d(&e, |c, g| game_data.on_draw(c, g, ren));
         }
         if let Some(upd) = e.update_args() {
-            game_state.on_update(upd);
+            game_data.on_update(upd);
         }
         if let Some(bin) = e.button_args() {
-            game_state.on_input(bin);
+            game_data.on_input(bin);
         }
         if let Some(mouse) = e.mouse_cursor_args() {
-            game_state.on_mouse_move(mouse);
+            game_data.on_mouse_move(mouse);
         }
     }
 }

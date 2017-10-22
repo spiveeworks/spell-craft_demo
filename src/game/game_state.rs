@@ -1,3 +1,15 @@
+use std::rc;
+
+use charm_internal::entities::effects;
+use charm_internal::entities::presets;
+use charm_internal::entities::spaces;
+use charm_internal::events;
+use charm_internal::physics;
+use charm_internal::units;
+
+use charm_internal::prelude::*;
+
+
 struct PlayerEffect;
 
 impl effects::Effect for PlayerEffect {
@@ -29,8 +41,9 @@ impl Player {
 
 struct GameState {
     time: events::EventQueue,
-    space: Owned<entities::Space>,
+    space: Owned<spaces::Space>,
     player: Player,
+    action: rc::Rc<effects::Cast>,
 }
 
 impl GameState {
@@ -42,7 +55,9 @@ impl GameState {
 
         let player = Player::new();
 
-        GameState { time, space, player }
+        let action = presets::grenade();
+
+        GameState { time, space, player, action }
     }
 
     // what module should this be in?
@@ -66,68 +81,17 @@ impl GameState {
         self.player.body.bounce(units::Vec2 { x, y }, self.igt.now());
     }
 
-    fn fire(&mut self) {
+    fn fire(&mut self, target: units::Position) {
         let time_now = self.igt.now();
-        let _result = entities::Grenade::new(
-            &mut self.igt,
-            &self.space.share(),
-            self.player.body.position(time_now),
-            self.cursor_pos,
-            1 * units::SEC
+        effects::Cast::cast(
+            &*self.action,
+            &mut self.time,
+            self.space.share(),
+            self.player.body,
+            target,
         );
-    }
-
-    // what module should this be in?
-    fn draw(
-        self: &mut Self,
-        context: Context,
-        graphics: &mut G2d,
-        ren: RenderArgs,
-    ) {
-        clear([0.0, 0.0, 0.0, 1.0], graphics);
-
-        let center = context.transform
-                            .trans(
-                                (ren.width / 2) as f64,
-                                (ren.height / 2) as f64
-                            );
-        let red = [1.0, 0.0, 0.0, 1.0];
-        ellipse(
-            red,
-            rectangle(&self.player.body, self.player.radius, self.igt.now()),
-            center,
-            graphics
-        );
-        let space = self.space.share();
-        if let Ok(space) = space.try_borrow() {
-            for nade in &space.nades {
-                let nade = nade.share();
-                if let Ok(nade) = nade.try_borrow() {
-                    let (rad, col) = match nade.state {
-                        entities::GrenadeState::Cooking{..} =>
-                            (7.0, [0.0, 0.2, 0.0, 1.0]),
-                        entities::GrenadeState::Smoke =>
-                            (150.0, [1.0, 0.8, 0.0, 1.0]),
-                    };
-                    ellipse(
-                        col,
-                        rectangle(&nade.body, rad, self.igt.now()),
-                        center,
-                        graphics
-                    );
-                }
-                std::mem::drop(nade);
-            }
-        }
-        std::mem::drop(space);
     }
 }
 
 
-fn rectangle(body: &physics::Body, radius: f64, now: units::Time) -> [f64; 4] {
-    let units::Vec2{x, y} = body.position(now);
-    let x = x as f64 / units::DOT as f64;
-    let y = y as f64 / units::DOT as f64;
-    [x - radius, y - radius,
-        2.0 * radius, 2.0 * radius]
-}
+

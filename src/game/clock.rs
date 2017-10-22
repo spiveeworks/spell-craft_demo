@@ -12,14 +12,14 @@ fn duration_in_game(duration: time::Duration) -> units::Duration {
     time_s + time_n_bi / 1_000_000_000
 }
 
-struct Clock {
+struct Simple {
     start_instant: Option<time::Instant>,
     last_time: units::Time,
 }
 
-impl Clock {
-    fn new(start_time: units::Time) -> Clock {
-        Clock {
+impl Simple {
+    fn new(start_time: units::Time) -> Simple {
+        Simple {
             start_instant: None,
             last_time: start_time,
         }
@@ -51,22 +51,22 @@ impl Clock {
 }
 
 
-pub struct StutteringClock {
+pub struct Stuttering {
     // continuously reset this field to control the clock
     pub max_time: units::Time,
     // internal clock is always on, but will be reset as required
-    clock: Clock,
+    clock: Simple,
 }
 
 
-impl StutteringClock {
+impl Stuttering {
     pub fn new(igt: units::Time) -> Self {
         let max_time = igt;  // in this way the clock starts 'off'
 
-        let mut clock = Clock::new(initial_time);
+        let mut clock = Simple::new(igt);
         clock.start(time::Instant::now());
 
-        RealTime { clock, max_time }
+        Stuttering { clock, max_time }
     }
 
     pub fn time(self: &mut Self) -> units::Time {
@@ -77,7 +77,7 @@ impl StutteringClock {
         // meddle as required
         if ig_now > self.max_time {
             // make the clock stutter so that max_time is not exceeded
-            self.clock = Clock::new(self.max_time);
+            self.clock = Simple::new(self.max_time);
             self.clock.start(now);
 
             // we must be at max_time
