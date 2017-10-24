@@ -2,17 +2,9 @@ extern crate piston_window;
 
 use piston_window::*;
 
-use std::ops;
-
 extern crate charm_internal;
 
-use charm_internal::{units, physics, events, entities};
-use charm_internal::prelude::*;
-
 mod game;
-
-
-
 
 
 fn settings() -> WindowSettings {

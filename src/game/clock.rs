@@ -1,6 +1,6 @@
 use std::time;
 
-use units;
+use charm_internal::units;
 
 
 fn duration_in_game(duration: time::Duration) -> units::Duration {

@@ -148,15 +148,16 @@ pub struct BoltLandEvent {
 impl events::Event for BoltLandEvent {
     fn invoke(self: Box<Self>, time: &mut events::EventQueue) {
         if let Ok(bolt) = self.target.try_borrow_mut() {
-            {
+            let bolt_owned = {
                 // remove it from space
                 let mut loc = links::RefMut::map(bolt, |bolt| &mut bolt.loc);
-                Location::remove(&mut loc);
-            }
+                Location::remove(&mut loc)
+                    .expect("Bolt with bad space pointer")
+            };
 
             // cast the next action
-            let bolt = self.target.try_borrow().ok().unwrap();  // since we just succeeded
-            bolt.action.cast(                              // TODO use borrow() instead (nyi)
+            let bolt = bolt_owned.try_borrow().ok().unwrap();  // TODO use borrow() instead (nyi)
+            bolt.action.cast(
                 time,
                 bolt.loc.space.clone(),
                 bolt.loc.body.clone(),

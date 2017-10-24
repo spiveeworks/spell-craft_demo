@@ -10,43 +10,48 @@ mod user_input;
 
 pub struct Game {
     state: game_state::GameState,
-    time: clock::Stuttering,
+    real_time: clock::Stuttering,
     input: user_input::Input,
 }
 
 
 
 impl Game {
-    fn new() -> Game {
+    pub fn new() -> Game {
         let state = game_state::GameState::new();
-        let time = clock::Stuttering::new(state.time.now());
+        let real_time = clock::Stuttering::new(state.time.now());
         let input = user_input::Input::new();
 
-        Game { state, time, input }
+        Game { state, real_time, input }
     }
 
-    fn on_update(&mut self, _upd: UpdateArgs) {
-        let now = self.time.now();
+    pub fn on_update(&mut self, _upd: app::UpdateArgs) {
+        let now = self.real_time.time();
         self.state.time.simulate(now);
     }
 
-    fn on_input(&mut self, bin: ButtonArgs) {
+    pub fn on_input(&mut self, bin: app::ButtonArgs) {
+        self.input.on_input(&mut self.state, bin);
     }
 
-    fn on_mouse_move(&mut self, mouse: [f64; 2]) {
+    pub fn on_mouse_move(&mut self, mouse: [f64; 2]) {
+        self.input.on_mouse_move(mouse);
     }
 
-    fn on_draw(
+    pub fn on_draw(
         &mut self,
-        context: Context,
-        graphics: &mut G2d,
-        ren: RenderArgs
+        context: app::Context,
+        graphics: &mut app::G2d,
+        ren: app::RenderArgs
     ) {
-        let now = self.time.now();
-        self.time.max_time = now + units::MOMENT;
+        // methods for operating on our 2d matrices
+        use piston_window::Transformed;
+
+        let now = self.state.time.now();
+        self.real_time.max_time = now + units::MOMENT;
 
 
-        clear([0.0, 0.0, 0.0, 1.0], graphics);
+        app::clear([0.0, 0.0, 0.0, 1.0], graphics);
 
         let center = context
             .transform
@@ -54,27 +59,29 @@ impl Game {
                 (ren.width / 2) as f64,
                 (ren.height / 2) as f64
             );
-        let position = self.player.body.position(now);
-        draw::draw_at(&self.player.shape, position, center, graphics);
+        let position = self.state.player.body.position(now);
+        draw::draw_at(&self.state.player.shape, position, center, graphics);
 
-        let space = self.space.try_borrow();
-        for ent in space.ents {
-            // TODO make generic functions for rendering things
-            // really the objects should generate a Graphics enum
-            // and then Draw should be implemented for the enum itself
-            match *ent {
-                Smoke(ref item) => {
-                    if let Ok(item) = item.try_borrow() {
-                        let position = item.loc.body.position(now);
-                        draw::draw_at(&item.shape, position, center, graphics);
-                    }
-                },
-                Bolt(ref item) => {
-                    if let Ok(item) = item.try_borrow() {
-                        let position = item.loc.body.position(now);
-                        draw::draw_at(&item.shape, position, center, graphics);
-                    }
-                },
+        if let Ok(space) = self.state.space.try_borrow() {
+            for ent in &space.ents {
+                // TODO make generic functions for rendering things
+                // really the objects should generate a Graphics enum
+                // and then Draw should be implemented for the enum itself
+                use charm_internal::entities::spaces::Entity::{Smoke, Bolt};
+                match *ent {
+                    Smoke(ref item) => {
+                        if let Ok(item) = item.try_borrow() {
+                            let position = item.loc.body.position(now);
+                            draw::draw_at(&item.shape, position, center, graphics);
+                        }
+                    },
+                    Bolt(ref item) => {
+                        if let Ok(item) = item.try_borrow() {
+                            let position = item.loc.body.position(now);
+                            draw::draw_at(&item.shape, position, center, graphics);
+                        }
+                    },
+                }
             }
         }
     }

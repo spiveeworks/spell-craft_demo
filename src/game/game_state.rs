@@ -9,6 +9,7 @@ use charm_internal::units;
 
 use charm_internal::prelude::*;
 
+use game::user_input;
 
 struct PlayerEffect;
 
@@ -18,9 +19,10 @@ impl effects::Effect for PlayerEffect {
     }
 }
 
-struct Player {
-    shape: effects::Circle,
-    body: physics::Body,
+// TODO clean up pubs... surely i can private things up a bit better
+pub struct Player {
+    pub shape: effects::Circle,
+    pub body: physics::Body,
     speed: units::Scalar,
 }
 
@@ -39,19 +41,19 @@ impl Player {
 }
 
 
-struct GameState {
-    time: events::EventQueue,
-    space: Owned<spaces::Space>,
-    player: Player,
+pub struct GameState {
+    pub time: events::EventQueue,
+    pub space: Owned<spaces::Space>,
+    pub player: Player,
     action: rc::Rc<effects::Cast>,
 }
 
 impl GameState {
-    fn new() -> GameState {
+    pub fn new() -> GameState {
         let time = events::EventQueue::new();
 
         let space_val = spaces::Space::new();
-        let space = Owned::new(space);
+        let space = Owned::new(space_val);
 
         let player = Player::new();
 
@@ -60,16 +62,29 @@ impl GameState {
         GameState { time, space, player, action }
     }
 
-    // what module should this be in?
-    fn update_movement(&mut self, dir: Dir, state: bool) {
 
 
+    pub fn fire(&mut self, target: units::Position) {
+        effects::Cast::cast(
+            &*self.action,
+            &mut self.time,
+            self.space.share(),
+            self.player.body.clone(),
+            target,
+        );
+    }
+
+
+    // TODO make DeviceAction enum
+    pub fn update_movement(&mut self, dirs: &user_input::DirPad<bool>) {
         let mut x = 0;
         let mut y = 0;
-        if self.dirs.left  { x -= SPEED }
-        if self.dirs.right { x += SPEED }
-        if self.dirs.up    { y -= SPEED }
-        if self.dirs.down  { y += SPEED }
+
+        let speed = self.player.speed;
+        if dirs.left  { x -= speed }
+        if dirs.right { x += speed }
+        if dirs.up    { y -= speed }
+        if dirs.down  { y += speed }
 
         if x != 0 && y != 0 {
             x *= 5;
@@ -78,18 +93,8 @@ impl GameState {
             y /= 7;
         }
 
-        self.player.body.bounce(units::Vec2 { x, y }, self.igt.now());
-    }
-
-    fn fire(&mut self, target: units::Position) {
-        let time_now = self.igt.now();
-        effects::Cast::cast(
-            &*self.action,
-            &mut self.time,
-            self.space.share(),
-            self.player.body,
-            target,
-        );
+        let now = self.time.now();
+        self.player.body.bounce(units::Vec2 { x, y }, now);
     }
 }
 

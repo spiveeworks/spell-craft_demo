@@ -2,6 +2,8 @@ use std::ops;
 
 use charm_internal::units;
 
+use game::game_state;
+
 use piston_window as app;
 
 
@@ -14,11 +16,11 @@ enum Dir {
 }
 
 #[derive(Default)]
-struct DirPad<T> {
-    up: T,
-    down: T,
-    left: T,
-    right: T,
+pub struct DirPad<T> {
+    pub up: T,
+    pub down: T,
+    pub left: T,
+    pub right: T,
 }
 
 impl<T> ops::Index<Dir> for DirPad<T> {
@@ -59,7 +61,7 @@ impl<T> DirPad<T>
 
 
 
-struct Input {
+pub struct Input {
     move_controls: DirPad<app::Button>,
     fire_button: app::Button,
     dirs: DirPad<bool>,
@@ -67,7 +69,7 @@ struct Input {
 }
 
 impl Input {
-    fn new() -> Input {
+    pub fn new() -> Input {
         let move_controls = DirPad {
             up:    app::Button::Keyboard(app::Key::W),
             down:  app::Button::Keyboard(app::Key::S),
@@ -87,24 +89,25 @@ impl Input {
         }
     }
 
-    fn on_input(&mut self, game_state: &mut GameState, bin: ButtonArgs) {
-        let ButtonArgs { button, state, .. } = bin;
-        let state = state == app::ButtonState::Press;  // true if pressed
+    // TODO g_state? game_state is a module... this happens a lot
+    pub fn on_input(&mut self, g_state: &mut game_state::GameState, bin: app::ButtonArgs) {
+        let app::ButtonArgs { button, state, .. } = bin;
+        let butt_pressed = state == app::ButtonState::Press;
 
         if let Some(dir) = self.move_controls.dir(button) {
-            // short circuit to avoid unnecessary rounding
-            if self.dirs[dir] != state {
-                self.dirs[dir] = state;
-                game_state.update_movement(&self.dirs);
+            // short circuit to avoid unnecessary updates/rounding
+            if self.dirs[dir] != butt_pressed {
+                self.dirs[dir] = butt_pressed;
+                g_state.update_movement(&self.dirs);
             }
         }
 
-        if state && button == self.fire_button {
-            game_state.fire(self.cursor_pos);
+        if butt_pressed && button == self.fire_button {
+            g_state.fire(self.cursor_pos);
         }
     }
 
-    fn on_mouse_move(&mut self, mouse: [f64; 2]) {
+    pub fn on_mouse_move(&mut self, mouse: [f64; 2]) {
         let x = (mouse[0] - 300.0) * units::DOT as f64;
         let y = (mouse[1] - 300.0) * units::DOT as f64;
         self.cursor_pos = units::Vec2 {
