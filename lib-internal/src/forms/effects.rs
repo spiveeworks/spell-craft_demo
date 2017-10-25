@@ -1,11 +1,8 @@
-use prelude::*;
-
 use std::rc;
 
 use events;
 use units;
 use physics;
-use links;
 use entities::spaces;
 
 

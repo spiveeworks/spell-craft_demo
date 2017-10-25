@@ -1,14 +1,4 @@
 [root]
 name = "charm_internal"
 version = "0.0.2"
-dependencies = [
- "owned_rc 0.2.2 (git+https://github.com/spiveeworks/owned_rc)",
-]
 
-[[package]]
-name = "owned_rc"
-version = "0.2.2"
-source = "git+https://github.com/spiveeworks/owned_rc#51ea9d31a71386bab3e2ea29f6f3f72542c65126"
-
-[metadata]
-"checksum owned_rc 0.2.2 (git+https://github.com/spiveeworks/owned_rc)" = "<none>"
