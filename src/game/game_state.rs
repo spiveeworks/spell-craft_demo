@@ -1,13 +1,11 @@
 use std::rc;
 
-use charm_internal::entities::effects;
-use charm_internal::entities::presets;
-use charm_internal::entities::spaces;
-use charm_internal::events;
+use charm_internal::forms::effects;
+use charm_internal::forms::presets;
+use charm_internal::entity_heap;
+use charm_internal::event_queue;
 use charm_internal::physics;
 use charm_internal::units;
-
-use charm_internal::prelude::*;
 
 use game::user_input;
 
@@ -42,38 +40,35 @@ impl Player {
 
 
 pub struct GameState {
-    pub time: events::EventQueue,
-    pub space: Owned<spaces::Space>,
+    pub time: event_queue::EventQueue,
+    pub space: entity_heap::EntityHeap,
     pub player: Player,
     action: rc::Rc<effects::Cast>,
 }
 
 impl GameState {
     pub fn new() -> GameState {
-        let time = events::EventQueue::new();
-
-        let space_val = spaces::Space::new();
-        let space = Owned::new(space_val);
-
+        let space = entity_heap::EntityHeap::new();
+        let time = event_queue::EventQueue::new();
         let player = Player::new();
-
         let action = presets::grenade();
 
         GameState { time, space, player, action }
     }
 
-
+    pub fn simulate(&mut self, until: units::Time) {
+        self.time.simulate(&mut self.space, until);
+    }
 
     pub fn fire(&mut self, target: units::Position) {
         effects::Cast::cast(
             &*self.action,
+            &mut self.space,
             &mut self.time,
-            self.space.share(),
             self.player.body.clone(),
             target,
         );
     }
-
 
     // TODO make DeviceAction enum
     pub fn update_movement(&mut self, dirs: &user_input::DirPad<bool>) {
