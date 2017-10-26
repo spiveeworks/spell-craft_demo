@@ -79,12 +79,11 @@ pub fn new_entity<T>(space: &mut EntityHeap, matter: T) -> UID
     where T: AsEntity
 {
     let mut uid = space.len() as UID;
-    let ent = AsEntity::as_entity(matter);
-    let mut to_insert = Some(ent);
-    while let Some(ent) = to_insert.take() {
+    while space.contains_key(&uid) {
         uid += 1;
-        to_insert = space.insert(uid, ent);
     }
+    let ent = AsEntity::as_entity(matter);
+    space.insert(uid, ent);
     uid
 }
 
