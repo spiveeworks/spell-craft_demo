@@ -2,9 +2,10 @@ use std::cmp;
 use std::collections::binary_heap;
 
 use units;
+use entity_heap;
 
 pub trait Event {
-    fn invoke(self: Box<Self>, &mut EventQueue);
+    fn invoke(self: Box<Self>, space: &mut entity_heap::EntityHeap, time: &mut EventQueue);
 }
 
 struct QueueElement {
@@ -70,7 +71,7 @@ impl EventQueue {
             .map(|qe| qe.execute_time)
     }
 
-    pub fn invoke_next(&mut self) {
+    pub fn invoke_next(&mut self, space: &mut entity_heap::EntityHeap) {
         let element =
             if let Some(next) = self.queue.peek_mut() {
                 if next.execute_time > self.current_time {
@@ -81,13 +82,13 @@ impl EventQueue {
                 return;
             };
         element.call_back
-               .invoke(self);
+               .invoke(space, self);
     }
 
-    pub fn simulate(&mut self, until: units::Time) {
+    pub fn simulate(&mut self, space: &mut entity_heap::EntityHeap, until: units::Time) {
         while let Some(next_time) = self.next() {
             if next_time <= until {
-                self.invoke_next();
+                self.invoke_next(space);
             } else {
                 break;
             }

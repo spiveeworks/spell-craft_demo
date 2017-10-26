@@ -4,4 +4,3 @@ version = "0.0.2"
 authors = ["SpiveeWorks <spiveehere@gmail.com>"]
 
 [dependencies]
-owned_rc = { git = 'https://github.com/spiveeworks/owned_rc' }
