@@ -1,4 +1,4 @@
-use charm_internal::entities::effects;
+use charm_internal::forms::effects;
 use charm_internal::units;
 
 use piston_window as app;

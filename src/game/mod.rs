@@ -27,7 +27,7 @@ impl Game {
 
     pub fn on_update(&mut self, _upd: app::UpdateArgs) {
         let now = self.real_time.time();
-        self.state.time.simulate(now);
+        self.state.simulate(now);
     }
 
     pub fn on_input(&mut self, bin: app::ButtonArgs) {
@@ -62,26 +62,20 @@ impl Game {
         let position = self.state.player.body.position(now);
         draw::draw_at(&self.state.player.shape, position, center, graphics);
 
-        if let Ok(space) = self.state.space.try_borrow() {
-            for ent in &space.ents {
-                // TODO make generic functions for rendering things
-                // really the objects should generate a Graphics enum
-                // and then Draw should be implemented for the enum itself
-                use charm_internal::entities::spaces::Entity::{Smoke, Bolt};
-                match *ent {
-                    Smoke(ref item) => {
-                        if let Ok(item) = item.try_borrow() {
-                            let position = item.loc.body.position(now);
-                            draw::draw_at(&item.shape, position, center, graphics);
-                        }
-                    },
-                    Bolt(ref item) => {
-                        if let Ok(item) = item.try_borrow() {
-                            let position = item.loc.body.position(now);
-                            draw::draw_at(&item.shape, position, center, graphics);
-                        }
-                    },
-                }
+        for (&_uid, ent) in &self.state.space {
+            // TODO make generic functions for rendering things
+            // really the objects should generate a Graphics enum
+            // and then Draw should be implemented for the enum itself
+            use charm_internal::entity_heap::Entity::{Smoke, Bolt};
+            match *ent {
+                Smoke(ref item) => {
+                    let position = item.body.position(now);
+                    draw::draw_at(&item.shape, position, center, graphics);
+                },
+                Bolt(ref item) => {
+                    let position = item.body.position(now);
+                    draw::draw_at(&item.shape, position, center, graphics);
+                },
             }
         }
     }
