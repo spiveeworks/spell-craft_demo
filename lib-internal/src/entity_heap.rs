@@ -1,5 +1,7 @@
 use std::collections;
 
+use forms::effects;
+
 pub trait AsEntity where Self: Sized {
     fn as_entity(Self) -> Entity;
     fn downcast(Entity) -> Result<Self, Entity>;
@@ -57,6 +59,33 @@ macro_rules! entity_definition {
 entity_definition! {
     Bolt(effects::Bolt),
     Smoke(effects::Smoke),
+}
+
+
+impl Entity {
+    pub fn expect<T>(self, err: &str) -> T
+        where T: AsEntity
+    {
+        if let Ok(val) = AsEntity::downcast(self) {
+            val
+        } else {
+            panic!("Downcasted bad entity UID: {}", err);
+        }
+    }
+}
+
+// TODO rand
+pub fn new_entity<T>(space: &mut EntityHeap, matter: T) -> UID
+    where T: AsEntity
+{
+    let mut uid = space.len() as UID;
+    let ent = AsEntity::as_entity(matter);
+    let mut to_insert = Some(ent);
+    while let Some(ent) = to_insert.take() {
+        uid += 1;
+        to_insert = space.insert(uid, ent);
+    }
+    uid
 }
 
 

@@ -2,7 +2,7 @@ use std::rc;
 
 use units;
 
-use entities::effects;
+use forms::effects;
 
 
 struct BoltEffect;
