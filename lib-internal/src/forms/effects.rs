@@ -39,7 +39,7 @@ pub struct SmokeClearEvent {
 
 impl event_queue::Event for SmokeClearEvent {
     fn invoke(
-        self: Box<Self>,
+        self: Self,
         space: &mut entity_heap::EntityHeap,
         _time: &mut event_queue::EventQueue
     ) {
@@ -93,7 +93,7 @@ pub struct BoltLandEvent {
 
 impl event_queue::Event for BoltLandEvent {
     fn invoke(
-        self: Box<Self>,
+        self: Self,
         space: &mut entity_heap::EntityHeap,
         time: &mut event_queue::EventQueue
     ) {
