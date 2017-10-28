@@ -2,8 +2,6 @@ use std::ops;
 
 use charm_internal::units;
 
-use game::game_state;
-
 use piston_window as app;
 
 
@@ -15,7 +13,7 @@ enum Dir {
     Right,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct DirPad<T> {
     pub up: T,
     pub down: T,
@@ -60,6 +58,15 @@ impl<T> DirPad<T>
 
 
 
+pub enum DeviceUpdate {
+    Nop,
+    Cast {
+        target: units::Position
+    },
+    ChangeMovement {
+        dirs: DirPad<bool>
+    },
+}
 
 pub struct Input {
     move_controls: DirPad<app::Button>,
@@ -89,8 +96,10 @@ impl Input {
         }
     }
 
-    // TODO g_state? game_state is a module... this happens a lot
-    pub fn on_input(&mut self, g_state: &mut game_state::GameState, bin: app::ButtonArgs) {
+    pub fn interpret(
+        &mut self,
+        bin: app::ButtonArgs
+    ) -> DeviceUpdate {
         let app::ButtonArgs { button, state, .. } = bin;
         let butt_pressed = state == app::ButtonState::Press;
 
@@ -98,12 +107,14 @@ impl Input {
             // short circuit to avoid unnecessary updates/rounding
             if self.dirs[dir] != butt_pressed {
                 self.dirs[dir] = butt_pressed;
-                g_state.update_movement(&self.dirs);
+                DeviceUpdate::ChangeMovement { dirs: self.dirs.clone() }
+            } else {
+                DeviceUpdate::Nop
             }
-        }
-
-        if butt_pressed && button == self.fire_button {
-            g_state.fire(self.cursor_pos);
+        } else if butt_pressed && button == self.fire_button {
+            DeviceUpdate::Cast { target: self.cursor_pos }
+        } else {
+            DeviceUpdate::Nop
         }
     }
 

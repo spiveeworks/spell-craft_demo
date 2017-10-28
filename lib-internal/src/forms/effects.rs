@@ -147,3 +147,28 @@ impl Cast for BoltCast {
     }
 }
 
+pub struct ClusterCast {
+    pub actions: Box<[(units::Displacement, rc::Rc<Cast>)]>
+}
+
+impl Cast for ClusterCast {
+    fn cast(
+        self: &Self,
+        space: &mut entity_heap::EntityHeap,
+        time: &mut event_queue::EventQueue,
+        ref_frame: physics::Body,
+        target: units::Position,
+    ) {
+        for &(loc, ref action) in self.actions.iter() {
+            action.cast(
+                space,
+                time,
+                ref_frame.clone(),
+                target + loc,
+            );
+        }
+    }
+}
+
+
+

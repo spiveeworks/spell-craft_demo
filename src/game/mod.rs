@@ -5,13 +5,17 @@ use piston_window as app;
 mod clock;
 mod draw;
 mod game_state;
+mod grenade_builder;
 mod user_input;
+
+
 
 
 pub struct Game {
     state: game_state::GameState,
     real_time: clock::Stuttering,
     input: user_input::Input,
+    arsenal: grenade_builder::Builder,
 }
 
 
@@ -21,8 +25,9 @@ impl Game {
         let state = game_state::GameState::new();
         let real_time = clock::Stuttering::new(state.time.now());
         let input = user_input::Input::new();
+        let arsenal = grenade_builder::Builder::new();
 
-        Game { state, real_time, input }
+        Game { state, real_time, input, arsenal }
     }
 
     pub fn on_update(&mut self, _upd: app::UpdateArgs) {
@@ -31,7 +36,19 @@ impl Game {
     }
 
     pub fn on_input(&mut self, bin: app::ButtonArgs) {
-        self.input.on_input(&mut self.state, bin);
+        let action = self.input.interpret(bin);
+
+        use game::user_input::DeviceUpdate::*;
+        match action {
+            Nop => (),
+            Cast { target } => {
+                let action = self.arsenal.current();
+                self.state.cast_as_player(action, target);
+            },
+            ChangeMovement { dirs } => {
+                self.state.update_movement(dirs);
+            },
+        }
     }
 
     pub fn on_mouse_move(&mut self, mouse: [f64; 2]) {
@@ -44,7 +61,7 @@ impl Game {
         graphics: &mut app::G2d,
         ren: app::RenderArgs
     ) {
-        // methods for operating on our 2d matrices
+        // methods for operating on 2d matrices
         use piston_window::Transformed;
 
         let now = self.state.time.now();
