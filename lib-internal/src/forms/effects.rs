@@ -100,12 +100,13 @@ impl event_queue::Event for BoltLandEvent {
         let bolt: Bolt = space.remove(&self.target)
                               .expect("BoltLandEvent called on nonexistent entity")
                               .expect("Bolt for BoltLandEvent");
+        let loc = bolt.body.position(time.now());
 
         bolt.action.cast(
             space,
             time,
             bolt.body,
-            units::ZERO_VEC,
+            loc,
         );
     }
 }
