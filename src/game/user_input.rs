@@ -80,8 +80,7 @@ pub struct Input {
     move_controls: DirPad<app::Button>,
     fire_button: app::Button,
     cluster_buffer_button: app::Button,
-    arsenal_registers: [app::Button; 9],
-    build_basic: app::Button,
+    arsenal_registers: [app::Button; 10],
     build_cluster: app::Button,
     grenade_settings: [app::Button; 12],
     save_mode: app::Button,
@@ -105,6 +104,7 @@ impl Input {
         let cluster_buffer_button = app::Button::Mouse(app::MouseButton::Right);
 
         let arsenal_registers = [
+            app::Button::Keyboard(app::Key::D0),
             app::Button::Keyboard(app::Key::D1),
             app::Button::Keyboard(app::Key::D2),
             app::Button::Keyboard(app::Key::D3),
@@ -115,8 +115,6 @@ impl Input {
             app::Button::Keyboard(app::Key::D8),
             app::Button::Keyboard(app::Key::D9),
         ];
-
-        let build_basic = app::Button::Keyboard(app::Key::D0);
 
         let build_cluster = app::Button::Keyboard(app::Key::Equals);
 
@@ -153,7 +151,6 @@ impl Input {
             fire_button,
             cluster_buffer_button,
             arsenal_registers,
-            build_basic,
             build_cluster,
             grenade_settings,
             save_mode,
@@ -197,8 +194,6 @@ impl Input {
                 };
 
                 SetLevel { which, level }
-            } else if button == self.build_basic {
-                BuildBasic
             } else if button == self.build_cluster {
                 BuildCluster
             } else {

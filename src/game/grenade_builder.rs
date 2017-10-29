@@ -50,11 +50,15 @@ fn cluster_grenade(
     presets::cluster_grenade(children.into_boxed_slice())
 }
 
+enum IndexEnum {
+    Register(usize),
+    Dangle(rc::Rc<effects::Cast>),
+}
 
 pub struct Builder {
     settings: [Level; 4],
-    current: rc::Rc<effects::Cast>,
-    available: [rc::Rc<effects::Cast>; 9],
+    current: IndexEnum,
+    available: [rc::Rc<effects::Cast>; 10],
     cluster_buffer: Vec<(units::Displacement, rc::Rc<effects::Cast>)>,
 }
 
@@ -69,24 +73,27 @@ pub enum ArsenalUpdate {
     SaveNade {
         which: usize,
     },
-    BuildBasic,
     BuildCluster,
 }
 
 impl Builder {
     pub fn new() -> Self {
         let settings = [Level::Low; 4];
-        let current = basic_grenade(settings);
+
+        let current = IndexEnum::Register(0);
+
+        let def_nade = basic_grenade(settings);
         let available = [
-            rc::Rc::clone(&current),
-            rc::Rc::clone(&current),
-            rc::Rc::clone(&current),
-            rc::Rc::clone(&current),
-            rc::Rc::clone(&current),
-            rc::Rc::clone(&current),
-            rc::Rc::clone(&current),
-            rc::Rc::clone(&current),
-            rc::Rc::clone(&current),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
+            rc::Rc::clone(&def_nade),
         ];
         let cluster_buffer = Vec::new();
 
@@ -98,15 +105,13 @@ impl Builder {
         match upd {
             SetLevel { which, level } => {
                 self.settings[which] = level;
+                self.build_basic();
             },
             LoadNade { which } => {
                 self.load(which);
             },
             SaveNade { which } => {
                 self.save(which);
-            },
-            BuildBasic => {
-                self.build_basic();
             },
             BuildCluster => {
                 self.build_cluster();
@@ -115,31 +120,38 @@ impl Builder {
     }
 
     fn load(self: &mut Self, which: usize) {
-        self.current = rc::Rc::clone(&self.available[which]);
+        self.current = IndexEnum::Register(which);
     }
 
     fn save(self: &mut Self, which: usize) {
-        self.available[which] = rc::Rc::clone(&self.current);
+        if which > 0 {
+            self.available[which] = self.current();
+        }
     }
 
     fn build_basic(self: &mut Self) {
-        self.current = basic_grenade(self.settings);
+        self.available[0] = basic_grenade(self.settings);
     }
 
     pub fn add_to_cluster(self: &mut Self, offset: units::Displacement) {
-        let new = rc::Rc::clone(&self.current);
+        let new = self.current();
         self.cluster_buffer.push((offset, new));
     }
 
     fn build_cluster(self: &mut Self) {
         if self.cluster_buffer.len() > 0 {
             let buffer = mem::replace(&mut self.cluster_buffer, Vec::new());
-            self.current = cluster_grenade(buffer);
+            let nade = cluster_grenade(buffer);
+            self.current = IndexEnum::Dangle(nade);
         }
     }
 
     pub fn current(self: &Self) -> rc::Rc<effects::Cast> {
-        rc::Rc::clone(&self.current)
+        use self::IndexEnum::*;
+        match self.current {
+            Register(which) => rc::Rc::clone(&self.available[which]),
+            Dangle(ref nade) => rc::Rc::clone(nade),
+        }
     }
 }
 
