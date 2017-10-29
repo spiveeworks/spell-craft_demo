@@ -48,6 +48,14 @@ impl Game {
             ChangeMovement { dirs } => {
                 self.state.update_movement(dirs);
             },
+            ArsenalUpdate { upd } => {
+                self.arsenal.apply_update(upd);
+            },
+            AddToCluster { target } => {
+                let now = self.state.time.now();
+                let pos = self.state.player.body.position(now);
+                self.arsenal.add_to_cluster(target - pos);
+            },
         }
     }
 

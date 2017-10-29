@@ -6,7 +6,7 @@ use charm_internal::forms::presets;
 use charm_internal::units;
 
 #[derive(Clone, Copy)]
-enum Level {
+pub enum Level {
     Low,
     Medium,
     High,
@@ -53,11 +53,25 @@ fn cluster_grenade(
 
 pub struct Builder {
     settings: [Level; 4],
-    pub current: rc::Rc<effects::Cast>,
+    current: rc::Rc<effects::Cast>,
     available: [rc::Rc<effects::Cast>; 9],
     cluster_buffer: Vec<(units::Displacement, rc::Rc<effects::Cast>)>,
 }
 
+pub enum ArsenalUpdate {
+    SetLevel {
+        which: usize,
+        level: Level,
+    },
+    LoadNade {
+        which: usize,
+    },
+    SaveNade {
+        which: usize,
+    },
+    BuildBasic,
+    BuildCluster,
+}
 
 impl Builder {
     pub fn new() -> Self {
@@ -79,15 +93,36 @@ impl Builder {
         Builder { settings, current, available, cluster_buffer }
     }
 
-    pub fn load(self: &mut Self, which: usize) {
+    pub fn apply_update(self: &mut Self, upd: ArsenalUpdate) {
+        use self::ArsenalUpdate::*;
+        match upd {
+            SetLevel { which, level } => {
+                self.settings[which] = level;
+            },
+            LoadNade { which } => {
+                self.load(which);
+            },
+            SaveNade { which } => {
+                self.save(which);
+            },
+            BuildBasic => {
+                self.build_basic();
+            },
+            BuildCluster => {
+                self.build_cluster();
+            },
+        }
+    }
+
+    fn load(self: &mut Self, which: usize) {
         self.current = rc::Rc::clone(&self.available[which]);
     }
 
-    pub fn save(self: &mut Self, which: usize) {
+    fn save(self: &mut Self, which: usize) {
         self.available[which] = rc::Rc::clone(&self.current);
     }
 
-    pub fn build_basic(self: &mut Self) {
+    fn build_basic(self: &mut Self) {
         self.current = basic_grenade(self.settings);
     }
 
@@ -96,7 +131,7 @@ impl Builder {
         self.cluster_buffer.push((offset, new));
     }
 
-    pub fn build_cluster(self: &mut Self) {
+    fn build_cluster(self: &mut Self) {
         let buffer = mem::replace(&mut self.cluster_buffer, Vec::new());
         self.current = cluster_grenade(buffer);
     }
@@ -105,3 +140,4 @@ impl Builder {
         rc::Rc::clone(&self.current)
     }
 }
+
