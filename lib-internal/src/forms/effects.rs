@@ -43,9 +43,10 @@ impl event_queue::Event for SmokeClearEvent {
         space: &mut entity_heap::EntityHeap,
         _time: &mut event_queue::EventQueue
     ) {
-        let smoke: Smoke = space.remove(&self.target)
-                                .expect("SmokeClearEvent called on nonexistent entity")
-                                .expect("Smoke for SmokeClearEvent");
+        let smoke: Smoke = space
+            .remove(&self.target)
+            .expect("SmokeClearEvent called on nonexistent entity")
+            .expect("Smoke for SmokeClearEvent");
         drop(smoke);
     }
 }
@@ -97,15 +98,17 @@ impl event_queue::Event for BoltLandEvent {
         space: &mut entity_heap::EntityHeap,
         time: &mut event_queue::EventQueue
     ) {
-        let bolt: Bolt = space.remove(&self.target)
-                              .expect("BoltLandEvent called on nonexistent entity")
-                              .expect("Bolt for BoltLandEvent");
+        let bolt: Bolt = space
+            .remove(&self.target)
+            .expect("BoltLandEvent called on nonexistent entity")
+            .expect("Bolt for BoltLandEvent");
+        let loc = bolt.body.position(time.now());
 
         bolt.action.cast(
             space,
             time,
             bolt.body,
-            units::ZERO_VEC,
+            loc,
         );
     }
 }
@@ -146,4 +149,29 @@ impl Cast for BoltCast {
         );
     }
 }
+
+pub struct ClusterCast {
+    pub actions: Box<[(units::Displacement, rc::Rc<Cast>)]>
+}
+
+impl Cast for ClusterCast {
+    fn cast(
+        self: &Self,
+        space: &mut entity_heap::EntityHeap,
+        time: &mut event_queue::EventQueue,
+        ref_frame: physics::Body,
+        target: units::Position,
+    ) {
+        for &(loc, ref action) in self.actions.iter() {
+            action.cast(
+                space,
+                time,
+                ref_frame.clone(),
+                target + loc,
+            );
+        }
+    }
+}
+
+
 

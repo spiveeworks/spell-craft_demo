@@ -1,7 +1,6 @@
 use std::rc;
 
 use charm_internal::forms::effects;
-use charm_internal::forms::presets;
 use charm_internal::entity_heap;
 use charm_internal::event_queue;
 use charm_internal::physics;
@@ -43,7 +42,6 @@ pub struct GameState {
     pub time: event_queue::EventQueue,
     pub space: entity_heap::EntityHeap,
     pub player: Player,
-    action: rc::Rc<effects::Cast>,
 }
 
 impl GameState {
@@ -51,18 +49,21 @@ impl GameState {
         let space = entity_heap::EntityHeap::new();
         let time = event_queue::EventQueue::new();
         let player = Player::new();
-        let action = presets::grenade();
 
-        GameState { time, space, player, action }
+        GameState { time, space, player }
     }
 
     pub fn simulate(&mut self, until: units::Time) {
         self.time.simulate(&mut self.space, until);
     }
 
-    pub fn fire(&mut self, target: units::Position) {
+    pub fn cast_as_player(
+        &mut self,
+        action: rc::Rc<effects::Cast>,
+        target: units::Position
+    ) {
         effects::Cast::cast(
-            &*self.action,
+            &*action,
             &mut self.space,
             &mut self.time,
             self.player.body.clone(),
@@ -71,7 +72,7 @@ impl GameState {
     }
 
     // TODO make DeviceAction enum
-    pub fn update_movement(&mut self, dirs: &user_input::DirPad<bool>) {
+    pub fn update_movement(&mut self, dirs: user_input::DirPad<bool>) {
         let mut x = 0;
         let mut y = 0;
 
