@@ -121,21 +121,25 @@ impl Input {
         let build_cluster = app::Button::Keyboard(app::Key::Equals);
 
         let grenade_settings = [
-            app::Button::Keyboard(app::Key::U),
-            app::Button::Keyboard(app::Key::J),
+            // red
+            app::Button::Keyboard(app::Key::N),
+            app::Button::Keyboard(app::Key::H),
+            app::Button::Keyboard(app::Key::Y),
+
+            // green
             app::Button::Keyboard(app::Key::M),
+            app::Button::Keyboard(app::Key::J),
+            app::Button::Keyboard(app::Key::U),
 
-            app::Button::Keyboard(app::Key::I),
-            app::Button::Keyboard(app::Key::K),
+            // blue
             app::Button::Keyboard(app::Key::Comma),
+            app::Button::Keyboard(app::Key::K),
+            app::Button::Keyboard(app::Key::I),
 
-            app::Button::Keyboard(app::Key::O),
-            app::Button::Keyboard(app::Key::L),
+            // radius
             app::Button::Keyboard(app::Key::Period),
-
-            app::Button::Keyboard(app::Key::P),
-            app::Button::Keyboard(app::Key::Semicolon),
-            app::Button::Keyboard(app::Key::Slash),
+            app::Button::Keyboard(app::Key::L),
+            app::Button::Keyboard(app::Key::O),
         ];
 
         let save_mode = app::Button::Keyboard(app::Key::LShift);
@@ -183,7 +187,7 @@ impl Input {
                     LoadNade { which }
                 }
             } else if let Some(setting) = setting {
-                let which = setting / 4;
+                let which = setting / 3;
                 let level_num = setting % 3;
                 let level = match level_num {
                     0 => grenade_builder::Level::Low,

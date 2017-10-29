@@ -24,8 +24,8 @@ impl Level {
 
 fn color_from_levels(settings: [Level; 3]) -> [u8; 3] {
     let   red = settings[0].choose(0x22, 0x99, 0xFF);
-    let green = settings[0].choose(0x22, 0x99, 0xFF);
-    let  blue = settings[0].choose(0x22, 0x99, 0xFF);
+    let green = settings[1].choose(0x22, 0x99, 0xFF);
+    let  blue = settings[2].choose(0x22, 0x99, 0xFF);
 
     [red, green, blue]
 }
@@ -39,7 +39,7 @@ fn basic_grenade(settings: [Level; 4]) -> rc::Rc<effects::Cast> {
         settings[2],
     ];
     let color = color_from_levels(color_levels);
-    let radius = settings[3].choose(20, 120, 250) * units::DOT;
+    let radius = settings[3].choose(20, 80, 120) * units::DOT;
 
     presets::grenade(color, radius)
 }
