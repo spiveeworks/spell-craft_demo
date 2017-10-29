@@ -43,9 +43,10 @@ impl event_queue::Event for SmokeClearEvent {
         space: &mut entity_heap::EntityHeap,
         _time: &mut event_queue::EventQueue
     ) {
-        let smoke: Smoke = space.remove(&self.target)
-                                .expect("SmokeClearEvent called on nonexistent entity")
-                                .expect("Smoke for SmokeClearEvent");
+        let smoke: Smoke = space
+            .remove(&self.target)
+            .expect("SmokeClearEvent called on nonexistent entity")
+            .expect("Smoke for SmokeClearEvent");
         drop(smoke);
     }
 }
@@ -97,9 +98,10 @@ impl event_queue::Event for BoltLandEvent {
         space: &mut entity_heap::EntityHeap,
         time: &mut event_queue::EventQueue
     ) {
-        let bolt: Bolt = space.remove(&self.target)
-                              .expect("BoltLandEvent called on nonexistent entity")
-                              .expect("Bolt for BoltLandEvent");
+        let bolt: Bolt = space
+            .remove(&self.target)
+            .expect("BoltLandEvent called on nonexistent entity")
+            .expect("Bolt for BoltLandEvent");
         let loc = bolt.body.position(time.now());
 
         bolt.action.cast(
