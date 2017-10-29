@@ -120,24 +120,24 @@ impl Input {
 
         let grenade_settings = [
             // red
+            app::Button::Keyboard(app::Key::B),
+            app::Button::Keyboard(app::Key::G),
+            app::Button::Keyboard(app::Key::T),
+
+            // green
             app::Button::Keyboard(app::Key::N),
             app::Button::Keyboard(app::Key::H),
             app::Button::Keyboard(app::Key::Y),
 
-            // green
+            // blue
             app::Button::Keyboard(app::Key::M),
             app::Button::Keyboard(app::Key::J),
             app::Button::Keyboard(app::Key::U),
 
-            // blue
+            // radius
             app::Button::Keyboard(app::Key::Comma),
             app::Button::Keyboard(app::Key::K),
             app::Button::Keyboard(app::Key::I),
-
-            // radius
-            app::Button::Keyboard(app::Key::Period),
-            app::Button::Keyboard(app::Key::L),
-            app::Button::Keyboard(app::Key::O),
         ];
 
         let save_mode = app::Button::Keyboard(app::Key::LShift);
