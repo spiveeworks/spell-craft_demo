@@ -132,8 +132,10 @@ impl Builder {
     }
 
     fn build_cluster(self: &mut Self) {
-        let buffer = mem::replace(&mut self.cluster_buffer, Vec::new());
-        self.current = cluster_grenade(buffer);
+        if self.cluster_buffer.len() > 0 {
+            let buffer = mem::replace(&mut self.cluster_buffer, Vec::new());
+            self.current = cluster_grenade(buffer);
+        }
     }
 
     pub fn current(self: &Self) -> rc::Rc<effects::Cast> {
